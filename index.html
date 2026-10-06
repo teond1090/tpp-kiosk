@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tenant Property Protection</title>
+<meta name="theme-color" content="#0b0b0d">
+<link rel="preload" href="assets/img/logo.webp" as="image">
+<style>
+  @font-face { font-family: "Anton"; src: url("assets/fonts/Anton-Regular.ttf") format("truetype"); font-display: block; }
+  @font-face { font-family: "Oswald"; src: url("assets/fonts/Oswald.ttf") format("truetype"); font-weight: 200 700; font-display: block; }
+
+  :root {
+    --red: #b3202a;
+    --red-hi: #e2343e;
+    --ink: #0b0b0d;
+    --steel: #1a1a1f;
+    --text: #ffffff;
+    --muted: #c9c9cf;
+    --gutter: clamp(16px, 2.6vw, 48px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: "Oswald", system-ui, sans-serif;
+    overflow: hidden;
+    /* kiosk hardening: no text selection, callouts, double-tap zoom */
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  /* ---------- home ---------- */
+  .home {
+    position: fixed; inset: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: var(--gutter);
+    gap: clamp(14px, 2.2vh, 32px);
+    background:
+      linear-gradient(180deg, rgba(11,11,13,.82) 0%, rgba(11,11,13,.93) 55%, rgba(11,11,13,.98) 100%),
+      url("assets/img/bg.webp") center / cover no-repeat;
+  }
+  .home::before {               /* slow crimson glow */
+    content: ""; position: absolute; inset: -20%;
+    background: radial-gradient(40% 35% at 50% 0%, rgba(179,32,42,.35), transparent 70%);
+    animation: breathe 7s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes breathe { 50% { opacity: .55; transform: scale(1.06); } }
+
+  header {
+    position: relative;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .logo { height: clamp(72px, 13vh, 160px); width: auto; filter: drop-shadow(0 4px 18px rgba(0,0,0,.6)); }
+  .headline { text-align: right; }
+  .headline h1 {
+    font-family: "Anton", sans-serif; font-weight: 400; letter-spacing: .01em;
+    font-size: clamp(30px, 4.6vw, 86px); line-height: 1;
+    text-transform: uppercase;
+  }
+  .headline h1 span { color: var(--red-hi); }
+  .headline p { margin-top: 8px; color: var(--muted); font-size: clamp(16px, 1.6vw, 30px); letter-spacing: .04em; }
+
+  /* ---------- product tiles ---------- */
+  .tiles {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(12px, 1.6vw, 28px);
+    min-height: 0;
+  }
+  .tile {
+    position: relative; overflow: hidden;
+    border: 0; border-radius: clamp(14px, 1.4vw, 26px);
+    background: var(--steel) center / cover no-repeat;
+    color: inherit; text-align: left; font: inherit; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: clamp(16px, 1.8vw, 34px);
+    box-shadow: 0 18px 40px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.08);
+    transition: transform .18s ease, box-shadow .18s ease;
+    animation: rise .7s cubic-bezier(.2,.8,.2,1) both;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tile:nth-child(2) { animation-delay: .08s; }
+  .tile:nth-child(3) { animation-delay: .16s; }
+  .tile:nth-child(4) { animation-delay: .24s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(40px); } }
+  .tile::before {                /* photo zoom layer */
+    content: ""; position: absolute; inset: 0;
+    background: inherit; background-size: cover;
+    transform: scale(1.04); transition: transform 6s ease;
+  }
+  .tile::after {                 /* legibility gradient + red base bar */
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.55) 58%, rgba(0,0,0,.92) 100%),
+      linear-gradient(0deg, var(--red) 0 8px, transparent 8px);
+  }
+  .tile > * { position: relative; z-index: 1; }
+  .tile:hover::before { transform: scale(1.12); }
+  .tile:active { transform: scale(.97); box-shadow: 0 8px 20px rgba(0,0,0,.6), inset 0 0 0 3px var(--red-hi); }
+
+  .tile .num {
+    position: absolute; top: clamp(14px, 1.6vw, 28px); left: clamp(16px, 1.8vw, 34px);
+    font-family: "Anton", sans-serif; font-size: clamp(16px, 1.3vw, 26px);
+    background: var(--red); padding: 4px 12px; border-radius: 999px; letter-spacing: .06em;
+  }
+  .tile h2 {
+    font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase;
+    font-size: clamp(26px, 2.8vw, 58px); line-height: 1.02;
+    text-shadow: 0 3px 14px rgba(0,0,0,.7);
+  }
+  .tile p {
+    margin-top: 10px; color: #e6e6ea;
+    font-size: clamp(15px, 1.25vw, 26px); line-height: 1.25;
+  }
+  .tile .cta {
+    margin-top: clamp(14px, 1.6vh, 24px);
+    display: inline-flex; align-items: center; gap: 10px; align-self: flex-start;
+    background: var(--red); color: #fff;
+    font-family: "Anton", sans-serif; letter-spacing: .05em; text-transform: uppercase;
+    font-size: clamp(16px, 1.3vw, 26px);
+    padding: clamp(8px, .8vw, 14px) clamp(14px, 1.3vw, 24px);
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(179,32,42,.55);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  .tile:nth-child(2) .cta { animation-delay: .6s; }
+  .tile:nth-child(3) .cta { animation-delay: 1.2s; }
+  .tile:nth-child(4) .cta { animation-delay: 1.8s; }
+  .cta svg { width: 1em; height: 1em; }
+  @keyframes pulse { 50% { box-shadow: 0 6px 30px rgba(226,52,62,.95); transform: scale(1.04); } }
+
+  /* ---------- footer ---------- */
+  footer {
+    position: relative;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+  }
+  .contact { font-size: clamp(16px, 1.5vw, 30px); color: var(--muted); letter-spacing: .03em; }
+  .contact b { color: #fff; font-weight: 500; }
+  .contact .phone { font-family: "Anton", sans-serif; color: var(--red-hi); font-size: 1.25em; letter-spacing: .04em; }
+  .pete {
+    display: flex; align-items: flex-end; gap: 14px;
+  }
+  .bubble {
+    background: #fff; color: var(--ink);
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .03em;
+    font-size: clamp(16px, 1.4vw, 28px);
+    padding: 12px 20px; border-radius: 18px 18px 4px 18px;
+    margin-bottom: 30%;
+    box-shadow: 0 10px 24px rgba(0,0,0,.45);
+    animation: bob 3s ease-in-out infinite;
+  }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  .pete img { height: clamp(90px, 15vh, 190px); width: auto; filter: drop-shadow(0 8px 20px rgba(0,0,0,.6)); }
+
+  /* ---------- product view (placeholder until videos are added) ---------- */
+  .product {
+    position: fixed; inset: 0; z-index: 10;
+    display: none; place-items: center;
+    background: var(--ink);
+    padding: var(--gutter);
+  }
+  .product.open { display: grid; animation: fade .3s ease both; }
+  @keyframes fade { from { opacity: 0; } }
+  .product .stage { text-align: center; max-width: 1100px; }
+  .product h2 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(36px, 5vw, 96px); }
+  .product p { color: var(--muted); font-size: clamp(18px, 1.8vw, 34px); margin-top: 12px; }
+  .back {
+    position: fixed; top: var(--gutter); left: var(--gutter); z-index: 11;
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.1); color: #fff; border: 2px solid rgba(255,255,255,.35);
+    font-family: "Anton", sans-serif; letter-spacing: .05em; text-transform: uppercase;
+    font-size: clamp(18px, 1.5vw, 30px);
+    padding: 12px 24px; border-radius: 999px; cursor: pointer;
+  }
+  .back svg { width: 1.1em; height: 1.1em; }
+
+  /* ---------- portrait kiosks / tablets / phones ---------- */
+  @media (orientation: portrait), (max-width: 900px) {
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    header { flex-direction: column; align-items: flex-start; }
+    .headline { text-align: left; }
+  }
+  @media (max-width: 560px) {
+    body { overflow: auto; }
+    .home { position: static; min-height: 100%; }
+    .tiles { grid-template-columns: 1fr; }
+    .tile { min-height: 260px; }
+    .pete .bubble { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<main class="home" id="home">
+  <header>
+    <img class="logo" src="assets/img/logo.webp" alt="Tenant Property Protection">
+    <div class="headline">
+      <h1>Tap a product. <span>See how it works.</span></h1>
+      <p>Smarter than insurance — protection your tenants can count on.</p>
+    </div>
+  </header>
+
+  <section class="tiles" aria-label="Products">
+    <button class="tile" data-product="secure" style="background-image:url('assets/img/secure.webp')">
+      <span class="num">01</span>
+      <h2>TPP Secure</h2>
+      <p>Lease-compliant tenant contents protection. Replacement cost, $0 deductible.</p>
+      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+    </button>
+    <button class="tile" data-product="rv" style="background-image:url('assets/img/rv.webp')">
+      <span class="num">02</span>
+      <h2>RV Park 'n' Protect</h2>
+      <p>Outdoor coverage for RVs, boats &amp; automobiles.</p>
+      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+    </button>
+    <button class="tile" data-product="container" style="background-image:url('assets/img/container.webp'); background-position:78% 50%">
+      <span class="num">03</span>
+      <h2>Portable Container Protection</h2>
+      <p>Protection that goes wherever your containers go.</p>
+      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+    </button>
+    <button class="tile" data-product="flex" style="background-image:url('assets/img/flex.webp')">
+      <span class="num">04</span>
+      <h2>Flex Space</h2>
+      <p>Your flex-space tenants are protected, too.</p>
+      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+    </button>
+  </section>
+
+  <footer>
+    <div class="contact">
+      <b>tenantpropertyprotection.com</b><br>
+      <span class="phone">877-575-7774</span>
+    </div>
+    <div class="pete">
+      <div class="bubble">Tap one to get started!</div>
+      <img src="assets/img/pete.webp" alt="Protection Pete">
+    </div>
+  </footer>
+</main>
+
+<section class="product" id="product" aria-live="polite">
+  <button class="back" id="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Home</button>
+  <div class="stage">
+    <h2 id="product-title"></h2>
+    <p>Video coming soon.</p>
+  </div>
+</section>
+
+<script>
+  // Product videos get wired in here in the next step (e.g. videos/secure.mp4).
+  const PRODUCTS = {
+    secure:    { title: "TPP Secure" },
+    rv:        { title: "RV Park 'n' Protect" },
+    container: { title: "Portable Container Protection" },
+    flex:      { title: "Flex Space" },
+  };
+  const IDLE_MS = 90 * 1000;   // return to home after 90s without a touch
+
+  const product = document.getElementById("product");
+  const title = document.getElementById("product-title");
+
+  function openProduct(id) {
+    title.textContent = PRODUCTS[id].title;
+    product.classList.add("open");
+    history.replaceState(null, "", "#" + id);
+  }
+  function goHome() {
+    product.classList.remove("open");
+    history.replaceState(null, "", location.pathname);
+  }
+
+  document.querySelectorAll(".tile").forEach(t =>
+    t.addEventListener("click", () => openProduct(t.dataset.product)));
+  document.getElementById("back").addEventListener("click", goHome);
+
+  // Idle reset so the next visitor always starts on the home screen
+  let idle;
+  const resetIdle = () => { clearTimeout(idle); idle = setTimeout(goHome, IDLE_MS); };
+  ["pointerdown", "keydown"].forEach(e => addEventListener(e, resetIdle, { passive: true }));
+  resetIdle();
+
+  // Kiosk hardening: no long-press menus, no pinch zoom
+  addEventListener("contextmenu", e => e.preventDefault());
+  addEventListener("gesturestart", e => e.preventDefault());
+
+  // Deep link support (#secure, #rv, ...)
+  if (PRODUCTS[location.hash.slice(1)]) openProduct(location.hash.slice(1));
+</script>
+</body>
+</html>
