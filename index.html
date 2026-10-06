@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Tenant Property Protection</title>
-<meta name="theme-color" content="#0b0b0d">
-<link rel="preload" href="assets/img/logo.webp" as="image">
+<meta name="theme-color" content="#ffffff">
+<link rel="preload" href="assets/img/logo-light.webp" as="image">
 <style>
   @font-face { font-family: "Anton"; src: url("assets/fonts/Anton-Regular.ttf") format("truetype"); font-display: block; }
   @font-face { font-family: "Oswald"; src: url("assets/fonts/Oswald.ttf") format("truetype"); font-weight: 200 700; font-display: block; }
@@ -16,14 +16,15 @@
     --ink: #0b0b0d;
     --steel: #1a1a1f;
     --text: #ffffff;
-    --muted: #c9c9cf;
+    --muted: #55555c;
+    --page: #ffffff;
     --gutter: clamp(16px, 2.6vw, 48px);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
-    background: var(--ink);
-    color: var(--text);
+    background: var(--page);
+    color: var(--ink);
     font-family: "Oswald", system-ui, sans-serif;
     overflow: hidden;
     /* kiosk hardening: no text selection, callouts, double-tap zoom */
@@ -39,12 +40,11 @@
     padding: var(--gutter);
     gap: clamp(14px, 2.2vh, 32px);
     background:
-      linear-gradient(180deg, rgba(11,11,13,.82) 0%, rgba(11,11,13,.93) 55%, rgba(11,11,13,.98) 100%),
-      url("assets/img/bg.webp") center / cover no-repeat;
+      linear-gradient(180deg, #ffffff 0%, #ffffff 60%, #f1f1f3 100%);
   }
   .home::before {               /* slow crimson glow */
     content: ""; position: absolute; inset: -20%;
-    background: radial-gradient(40% 35% at 50% 0%, rgba(179,32,42,.35), transparent 70%);
+    background: radial-gradient(40% 35% at 50% 0%, rgba(179,32,42,.10), transparent 70%);
     animation: breathe 7s ease-in-out infinite;
     pointer-events: none;
   }
@@ -54,7 +54,7 @@
     position: relative;
     display: flex; align-items: center; justify-content: space-between; gap: 24px;
   }
-  .logo { height: clamp(72px, 13vh, 160px); width: auto; filter: drop-shadow(0 4px 18px rgba(0,0,0,.6)); }
+  .logo { height: clamp(72px, 13vh, 160px); width: auto; }
   .headline { text-align: right; }
   .headline h1 {
     font-family: "Anton", sans-serif; font-weight: 400; letter-spacing: .01em;
@@ -76,10 +76,10 @@
     position: relative; overflow: hidden;
     border: 0; border-radius: clamp(14px, 1.4vw, 26px);
     background: var(--steel) center / cover no-repeat;
-    color: inherit; text-align: left; font: inherit; cursor: pointer;
+    color: #fff; text-align: left; font: inherit; cursor: pointer;
     display: flex; flex-direction: column; justify-content: flex-end;
     padding: clamp(16px, 1.8vw, 34px);
-    box-shadow: 0 18px 40px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.08);
+    box-shadow: 0 16px 36px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.12);
     transition: transform .18s ease, box-shadow .18s ease;
     animation: rise .7s cubic-bezier(.2,.8,.2,1) both;
     -webkit-tap-highlight-color: transparent;
@@ -140,28 +140,28 @@
     display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
   }
   .contact { font-size: clamp(16px, 1.5vw, 30px); color: var(--muted); letter-spacing: .03em; }
-  .contact b { color: #fff; font-weight: 500; }
+  .contact b { color: var(--ink); font-weight: 500; }
   .contact .phone { font-family: "Anton", sans-serif; color: var(--red-hi); font-size: 1.25em; letter-spacing: .04em; }
   .pete {
     display: flex; align-items: flex-end; gap: 14px;
   }
   .bubble {
-    background: #fff; color: var(--ink);
+    background: var(--red); color: #fff;
     font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .03em;
     font-size: clamp(16px, 1.4vw, 28px);
     padding: 12px 20px; border-radius: 18px 18px 4px 18px;
     margin-bottom: 30%;
-    box-shadow: 0 10px 24px rgba(0,0,0,.45);
+    box-shadow: 0 10px 24px rgba(179,32,42,.35);
     animation: bob 3s ease-in-out infinite;
   }
   @keyframes bob { 50% { transform: translateY(-6px); } }
-  .pete img { height: clamp(90px, 15vh, 190px); width: auto; filter: drop-shadow(0 8px 20px rgba(0,0,0,.6)); }
+  .pete img { height: clamp(90px, 15vh, 190px); width: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,.25)); }
 
   /* ---------- product view (placeholder until videos are added) ---------- */
   .product {
     position: fixed; inset: 0; z-index: 10;
     display: none; place-items: center;
-    background: var(--ink);
+    background: var(--page); color: var(--ink);
     padding: var(--gutter);
   }
   .product.open { display: grid; animation: fade .3s ease both; }
@@ -172,7 +172,7 @@
   .back {
     position: fixed; top: var(--gutter); left: var(--gutter); z-index: 11;
     display: inline-flex; align-items: center; gap: 10px;
-    background: rgba(255,255,255,.1); color: #fff; border: 2px solid rgba(255,255,255,.35);
+    background: var(--red); color: #fff; border: 0; box-shadow: 0 6px 18px rgba(179,32,42,.35);
     font-family: "Anton", sans-serif; letter-spacing: .05em; text-transform: uppercase;
     font-size: clamp(18px, 1.5vw, 30px);
     padding: 12px 24px; border-radius: 999px; cursor: pointer;
@@ -205,7 +205,7 @@
 
 <main class="home" id="home">
   <header>
-    <img class="logo" src="assets/img/logo.webp" alt="Tenant Property Protection">
+    <img class="logo" src="assets/img/logo-light.webp" alt="Tenant Property Protection">
     <div class="headline">
       <h1>Tap a product. <span>See how it works.</span></h1>
       <p>Smarter than insurance — protection your tenants can count on.</p>
