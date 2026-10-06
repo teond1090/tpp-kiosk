@@ -185,9 +185,13 @@
     header { flex-direction: column; align-items: flex-start; }
     .headline { text-align: left; }
   }
-  @media (max-width: 560px) {
+  /* small or short screens (laptops, tablets, phones): let the page scroll instead of squishing tiles */
+  @media (max-width: 900px), (max-height: 760px) {
     body { overflow: auto; }
-    .home { position: static; min-height: 100%; }
+    .home { position: relative; min-height: 100%; }
+    .tile { min-height: 300px; }
+  }
+  @media (max-width: 560px) {
     .tiles { grid-template-columns: 1fr; }
     .tile { min-height: 260px; }
     .pete .bubble { display: none; }
