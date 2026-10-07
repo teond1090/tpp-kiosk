@@ -186,6 +186,28 @@
   }
   .back svg { width: 1.1em; height: 1.1em; }
 
+  /* ---------- attract mode: promo video loops until someone touches the screen ---------- */
+  .attract {
+    position: fixed; inset: 0; z-index: 20;
+    background: #000; cursor: pointer;
+    display: none;
+  }
+  .attract.on { display: block; animation: fade .4s ease both; }
+  .attract video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+  .touch-hint {
+    position: absolute; left: 50%; top: clamp(14px, 2.4vh, 32px); transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(179,32,42,.92); color: #fff;
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .06em;
+    font-size: clamp(16px, 1.5vw, 30px);
+    padding: 10px 26px; border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    animation: hint 2.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .touch-hint svg { width: 1.2em; height: 1.2em; }
+  @keyframes hint { 50% { transform: translateX(-50%) scale(1.06); box-shadow: 0 8px 34px rgba(226,52,62,.9); } }
+
   /* ---------- portrait kiosks / tablets / phones ---------- */
   @media (orientation: portrait), (max-width: 900px) {
     .tiles { grid-template-columns: repeat(2, 1fr); }
@@ -266,6 +288,14 @@
   </div>
 </section>
 
+<section class="attract" id="attract" aria-label="Promo video — touch to explore">
+  <video id="promo" src="videos/msm-loop.mp4" poster="videos/poster.jpg" loop playsinline preload="auto"></video>
+  <div class="touch-hint">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.03-.24-.03-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.38z"/></svg>
+    Touch the screen to explore
+  </div>
+</section>
+
 <script>
   // Product videos get wired in here in the next step (e.g. videos/secure.mp4).
   const PRODUCTS = {
@@ -274,7 +304,7 @@
     container: { title: "Portable Container Protection" },
     flex:      { title: "Flex Space" },
   };
-  const IDLE_MS = 90 * 1000;   // return to home after 90s without a touch
+  const IDLE_MS = 60 * 1000;   // after 60s without a touch, go back to the looping promo video
 
   const product = document.getElementById("product");
   const title = document.getElementById("product-title");
@@ -293,9 +323,35 @@
     t.addEventListener("click", () => openProduct(t.dataset.product)));
   document.getElementById("back").addEventListener("click", goHome);
 
-  // Idle reset so the next visitor always starts on the home screen
+  // Attract mode: the promo loops full-screen until someone touches the screen.
+  // Add ?attract=0 to the URL to turn it off (e.g. when testing on a laptop).
+  const attract = document.getElementById("attract");
+  const promo = document.getElementById("promo");
+  const ATTRACT = new URLSearchParams(location.search).get("attract") !== "0";
+
+  function startAttract() {
+    if (!ATTRACT) return goHome();
+    clearTimeout(idle);               // no idle timer while the promo is looping
+    goHome();
+    attract.classList.add("on");
+    promo.currentTime = 0;
+    promo.muted = false;
+    // Browsers block sound until the first touch unless the kiosk browser allows autoplay
+    // (Chrome: --autoplay-policy=no-user-gesture-required). Fall back to muted playback.
+    promo.play().catch(() => { promo.muted = true; promo.play().catch(() => {}); });
+  }
+  function stopAttract(e) {
+    if (!attract.classList.contains("on")) return;
+    e.preventDefault();               // this touch only wakes the kiosk; it doesn't press a tile
+    promo.pause();
+    attract.classList.remove("on");
+    resetIdle();
+  }
+  attract.addEventListener("pointerdown", stopAttract);
+
+  // Idle reset so the next visitor always starts fresh on the promo loop
   let idle;
-  const resetIdle = () => { clearTimeout(idle); idle = setTimeout(goHome, IDLE_MS); };
+  const resetIdle = () => { clearTimeout(idle); idle = setTimeout(startAttract, IDLE_MS); };
   ["pointerdown", "keydown"].forEach(e => addEventListener(e, resetIdle, { passive: true }));
   resetIdle();
 
@@ -303,8 +359,9 @@
   addEventListener("contextmenu", e => e.preventDefault());
   addEventListener("gesturestart", e => e.preventDefault());
 
-  // Deep link support (#secure, #rv, ...)
+  // Deep link support (#secure, #rv, ...) skips the promo; otherwise start on the loop
   if (PRODUCTS[location.hash.slice(1)]) openProduct(location.hash.slice(1));
+  else startAttract();
 </script>
 </body>
 </html>
