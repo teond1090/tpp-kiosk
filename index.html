@@ -208,6 +208,19 @@
   .touch-hint svg { width: 1.2em; height: 1.2em; }
   @keyframes hint { 50% { transform: translateX(-50%) scale(1.06); box-shadow: 0 8px 34px rgba(226,52,62,.9); } }
 
+  /* full-screen toggle on the promo video */
+  .fs-btn {
+    position: absolute; left: clamp(12px, 1.6vw, 28px); top: clamp(12px, 1.6vw, 28px);
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(0,0,0,.55); color: #fff; border: 2px solid rgba(255,255,255,.6);
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .05em;
+    font-size: clamp(14px, 1.1vw, 22px);
+    padding: 8px 18px; border-radius: 999px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .fs-btn svg { width: 1.2em; height: 1.2em; }
+  .fs-btn:active { transform: scale(.96); }
+
   /* ---------- portrait kiosks / tablets / phones ---------- */
   @media (orientation: portrait), (max-width: 900px) {
     .tiles { grid-template-columns: repeat(2, 1fr); }
@@ -294,6 +307,10 @@
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.03-.24-.03-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.38z"/></svg>
     Touch the screen to explore
   </div>
+  <button class="fs-btn" id="fs-btn" aria-label="Full screen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    <span id="fs-label">Full screen</span>
+  </button>
 </section>
 
 <script>
@@ -358,6 +375,24 @@
   // Kiosk hardening: no long-press menus, no pinch zoom
   addEventListener("contextmenu", e => e.preventDefault());
   addEventListener("gesturestart", e => e.preventDefault());
+
+  // Full-screen toggle for the promo video. Takes the whole kiosk page full screen so touches
+  // keep working; falls back to the native video player where page full screen isn't available (iPhone).
+  const fsBtn = document.getElementById("fs-btn");
+  const fsLabel = document.getElementById("fs-label");
+  const isFs = () => document.fullscreenElement || document.webkitFullscreenElement;
+  fsBtn.addEventListener("pointerdown", e => e.stopPropagation());   // don't treat this tap as "wake the kiosk"
+  fsBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    const root = document.documentElement;
+    if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else if (root.requestFullscreen) root.requestFullscreen().catch(() => {});
+    else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+    else if (promo.webkitEnterFullscreen) promo.webkitEnterFullscreen();
+  });
+  const syncFs = () => { fsLabel.textContent = isFs() ? "Exit full screen" : "Full screen"; };
+  document.addEventListener("fullscreenchange", syncFs);
+  document.addEventListener("webkitfullscreenchange", syncFs);
 
   // Deep link support (#secure, #rv, ...) skips the promo; otherwise start on the loop
   if (PRODUCTS[location.hash.slice(1)]) openProduct(location.hash.slice(1));
