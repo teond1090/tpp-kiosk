@@ -36,9 +36,9 @@
   .home {
     position: fixed; inset: 0;
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1.7fr 1fr auto;
     padding: var(--gutter);
-    gap: clamp(14px, 2.2vh, 32px);
+    gap: clamp(12px, 1.8vh, 26px);
     background:
       linear-gradient(180deg, #ffffff 0%, #ffffff 60%, #f1f1f3 100%);
   }
@@ -54,7 +54,7 @@
     position: relative;
     display: flex; align-items: center; justify-content: space-between; gap: 24px;
   }
-  .logo { height: clamp(72px, 13vh, 160px); width: auto; }
+  .logo { height: clamp(60px, 10vh, 128px); width: auto; }
   .headline { text-align: right; }
   .headline h1 {
     font-family: "Anton", sans-serif; font-weight: 400; letter-spacing: .01em;
@@ -110,15 +110,15 @@
   }
   .tile h2 {
     font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase;
-    font-size: clamp(26px, 2.8vw, 58px); line-height: 1.02;
+    font-size: clamp(24px, 2.35vw, 48px); line-height: 1.02;
     text-shadow: 0 3px 14px rgba(0,0,0,.7);
   }
   .tile p {
-    margin-top: 10px; color: #e6e6ea;
-    font-size: clamp(15px, 1.25vw, 26px); line-height: 1.25;
+    margin-top: 8px; color: #e6e6ea;
+    font-size: clamp(14px, 1.05vw, 21px); line-height: 1.25;
   }
   .tile .cta {
-    margin-top: clamp(14px, 1.6vh, 24px);
+    margin-top: clamp(10px, 1.2vh, 18px);
     display: inline-flex; align-items: center; gap: 10px; align-self: flex-start;
     background: var(--red); color: #fff;
     font-family: "Anton", sans-serif; letter-spacing: .05em; text-transform: uppercase;
@@ -133,6 +133,111 @@
   .tile:nth-child(4) .cta { animation-delay: 1.8s; }
   .cta svg { width: 1em; height: 1em; }
   @keyframes pulse { 50% { box-shadow: 0 6px 30px rgba(226,52,62,.95); transform: scale(1.04); } }
+
+  /* ---------- partners row: ClaimsPros, SafeHugg, Spin to Win ---------- */
+  .partners {
+    position: relative; min-height: 0;
+    display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: clamp(12px, 1.6vw, 28px);
+  }
+  .partner {
+    position: relative; overflow: hidden; cursor: pointer;
+    border: 0; border-radius: clamp(14px, 1.4vw, 26px);
+    background: #fff; color: var(--ink); font: inherit; text-align: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 1.2vh, 16px);
+    padding: clamp(14px, 1.6vw, 28px);
+    box-shadow: 0 16px 36px rgba(0,0,0,.14), 0 2px 6px rgba(0,0,0,.08), inset 0 0 0 2px #ececf0;
+    transition: transform .18s ease;
+    animation: rise .7s cubic-bezier(.2,.8,.2,1) .3s both;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .partner:active { transform: scale(.97); }
+  .partner .tag {
+    position: absolute; top: clamp(10px, 1.2vw, 18px); left: clamp(12px, 1.4vw, 22px);
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .08em;
+    font-size: clamp(12px, .9vw, 18px); color: var(--muted);
+  }
+  .partner img { max-width: 82%; max-height: clamp(44px, 8vh, 96px); width: auto; height: auto; }
+  .partner p { color: var(--muted); font-size: clamp(14px, 1.15vw, 24px); line-height: 1.2; }
+  .partner .cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--ink); color: #fff; border-radius: 999px;
+    font-family: "Anton", sans-serif; letter-spacing: .05em; text-transform: uppercase;
+    font-size: clamp(14px, 1.1vw, 22px); padding: 8px 18px;
+  }
+  .partner .cta svg { width: 1em; height: 1em; }
+  .partner.claimspros { box-shadow: 0 16px 36px rgba(0,0,0,.14), inset 0 -6px 0 #5aa832, inset 0 0 0 2px #ececf0; }
+  .partner.safehugg   { box-shadow: 0 16px 36px rgba(0,0,0,.14), inset 0 -6px 0 #2f7df6, inset 0 0 0 2px #ececf0; }
+
+  .partner.spin {
+    flex-direction: row; text-align: left; gap: clamp(14px, 1.6vw, 28px);
+    background: radial-gradient(120% 140% at 0% 0%, #e2343e 0%, #b3202a 45%, #6d1016 100%);
+    color: #fff; box-shadow: 0 16px 36px rgba(179,32,42,.35);
+  }
+  .partner.spin .tag { color: rgba(255,255,255,.75); }
+  .spin-icon { width: clamp(80px, 13vh, 160px); height: auto; flex: none; animation: turn 9s linear infinite; filter: drop-shadow(0 6px 14px rgba(0,0,0,.35)); }
+  @keyframes turn { to { transform: rotate(360deg); } }
+  .spin-copy h2 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(28px, 3vw, 62px); line-height: 1; }
+  .spin-copy p { color: #fff; opacity: .92; margin: 6px 0 10px; }
+  .spin-copy .cta { background: #fff; color: var(--red); }
+
+  /* ---------- prize wheel screen ---------- */
+  .wheel-screen {
+    position: fixed; inset: 0; z-index: 12; display: none;
+    background: radial-gradient(70% 80% at 50% 40%, #2a0b0e 0%, #0b0b0d 70%);
+    color: #fff; padding: var(--gutter);
+    grid-template-columns: 1.15fr 1fr; align-items: center; gap: clamp(16px, 3vw, 64px);
+  }
+  .wheel-screen.open { display: grid; animation: fade .3s ease both; }
+  .wheel-wrap { position: relative; justify-self: center; width: min(46vw, 82vh); aspect-ratio: 1; }
+  #wheel { width: 100%; height: 100%; display: block; }
+  .pointer { position: absolute; left: 50%; top: -3%; width: 9%; transform: translateX(-50%); z-index: 1; }
+  .pointer svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
+  .hub {
+    position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%);
+    border-radius: 50%; background: #fff; display: grid; place-items: center;
+    box-shadow: 0 0 0 6px #1a1a1f, 0 8px 24px rgba(0,0,0,.5);
+  }
+  .hub img { width: 62%; height: auto; }
+  .wheel-side { text-align: center; }
+  .wheel-side h2 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(40px, 5vw, 104px); line-height: 1; }
+  .wheel-side h2 span { color: var(--red-hi); }
+  .wheel-side .how { color: #d6d6dc; font-size: clamp(16px, 1.5vw, 30px); margin: 12px 0 clamp(18px, 3vh, 40px); }
+  .hold-btn {
+    position: relative; overflow: hidden; touch-action: none;
+    width: clamp(220px, 22vw, 420px); aspect-ratio: 1; border-radius: 50%;
+    border: 0; cursor: pointer; color: #fff;
+    background: radial-gradient(circle at 35% 30%, #ff5a64, #b3202a 60%, #6d1016);
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .05em;
+    font-size: clamp(26px, 2.6vw, 52px); line-height: 1.05;
+    box-shadow: 0 0 0 10px rgba(255,255,255,.08), 0 18px 40px rgba(179,32,42,.55);
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  .hold-btn .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: rgba(255,255,255,.28); pointer-events: none; }
+  .hold-btn .lbl { position: relative; pointer-events: none; }
+  .hold-btn.holding { transform: scale(.96); box-shadow: 0 0 0 14px rgba(255,255,255,.18), 0 0 60px rgba(226,52,62,.9); }
+  .hold-btn:disabled { opacity: .45; cursor: default; }
+  .power { margin-top: 14px; color: #d6d6dc; font-size: clamp(14px, 1.2vw, 24px); min-height: 1.4em; }
+  .result {
+    position: fixed; inset: 0; z-index: 14; display: none; place-items: center;
+    background: rgba(0,0,0,.6);
+  }
+  .result.open { display: grid; animation: fade .25s ease both; }
+  .result .card {
+    background: #fff; color: var(--ink); text-align: center; border-radius: 28px;
+    padding: clamp(24px, 3vw, 56px) clamp(28px, 4vw, 80px); max-width: 80vw;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6); animation: pop .45s cubic-bezier(.2,1.6,.4,1) both;
+  }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+  .result .card .small { font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--red); font-size: clamp(18px, 1.6vw, 32px); }
+  .result .card h3 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(40px, 5vw, 100px); line-height: 1.05; margin: 10px 0; }
+  .result .card p { color: var(--muted); font-size: clamp(16px, 1.5vw, 30px); }
+  .result .actions { margin-top: clamp(16px, 2.5vh, 32px); display: flex; gap: 16px; justify-content: center; }
+  .btn {
+    border: 0; border-radius: 999px; cursor: pointer;
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .05em;
+    font-size: clamp(16px, 1.4vw, 28px); padding: 12px 28px; background: var(--red); color: #fff;
+  }
+  #confetti { position: fixed; inset: 0; z-index: 15; pointer-events: none; }
 
   /* ---------- footer ---------- */
   footer {
@@ -162,7 +267,7 @@
     animation: bob 3s ease-in-out infinite;
   }
   @keyframes bob { 50% { transform: translateY(-6px); } }
-  .pete img { height: clamp(90px, 15vh, 190px); width: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,.25)); }
+  .pete img { height: clamp(80px, 12vh, 160px); width: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,.25)); }
 
   /* ---------- product view (placeholder until videos are added) ---------- */
   .product {
@@ -224,6 +329,10 @@
   /* ---------- portrait kiosks / tablets / phones ---------- */
   @media (orientation: portrait), (max-width: 900px) {
     .tiles { grid-template-columns: repeat(2, 1fr); }
+    .partners { grid-template-columns: 1fr 1fr; }
+    .partner.spin { grid-column: 1 / -1; }
+    .wheel-screen { grid-template-columns: 1fr; align-content: center; }
+    .wheel-wrap { width: min(86vw, 52vh); }
     header { flex-direction: column; align-items: flex-start; }
     .headline { text-align: left; }
   }
@@ -235,6 +344,7 @@
   }
   @media (max-width: 560px) {
     .tiles { grid-template-columns: 1fr; }
+    .partners { grid-template-columns: 1fr; }
     .tile { min-height: 260px; }
     .pete .bubble { display: none; }
   }
@@ -281,6 +391,39 @@
     </button>
   </section>
 
+  <section class="partners" aria-label="Partners and giveaways">
+    <button class="partner claimspros" data-product="claimspros">
+      <span class="tag">Partner</span>
+      <img src="assets/img/partners/claimspros.webp" alt="ClaimsPros - Storage Claims Specialists">
+      <p>Storage claims specialists.</p>
+      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+    </button>
+    <button class="partner safehugg" data-product="safehugg">
+      <span class="tag">Partner</span>
+      <img src="assets/img/partners/safehugg-dark.webp" alt="SafeHugg">
+      <p>Health, wellness &amp; personal safety &mdash; wrapped in a Hugg.</p>
+      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+    </button>
+    <button class="partner spin" id="open-wheel">
+      <span class="tag">Giveaway</span>
+      <svg class="spin-icon" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="48" fill="#1a1a1f"/>
+        <g stroke="#1a1a1f" stroke-width="1.5">
+          <path d="M50 50 L50 6 A44 44 0 0 1 81.1 18.9 Z" fill="#fff"/><path d="M50 50 L81.1 18.9 A44 44 0 0 1 94 50 Z" fill="#e2343e"/>
+          <path d="M50 50 L94 50 A44 44 0 0 1 81.1 81.1 Z" fill="#fff"/><path d="M50 50 L81.1 81.1 A44 44 0 0 1 50 94 Z" fill="#e2343e"/>
+          <path d="M50 50 L50 94 A44 44 0 0 1 18.9 81.1 Z" fill="#fff"/><path d="M50 50 L18.9 81.1 A44 44 0 0 1 6 50 Z" fill="#e2343e"/>
+          <path d="M50 50 L6 50 A44 44 0 0 1 18.9 18.9 Z" fill="#fff"/><path d="M50 50 L18.9 18.9 A44 44 0 0 1 50 6 Z" fill="#e2343e"/>
+        </g>
+        <circle cx="50" cy="50" r="10" fill="#fff" stroke="#1a1a1f" stroke-width="3"/>
+      </svg>
+      <div class="spin-copy">
+        <h2>Spin to win!</h2>
+        <p>Free gift card giveaways.</p>
+        <span class="cta">Play now <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+      </div>
+    </button>
+  </section>
+
   <footer>
     <div class="contact">
       <span class="booth">Visit us at Booth #527</span><br>
@@ -301,6 +444,33 @@
   </div>
 </section>
 
+<section class="wheel-screen" id="wheel-screen" aria-label="Prize wheel">
+  <button class="back" id="wheel-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Home</button>
+  <div class="wheel-wrap">
+    <canvas id="wheel" width="1000" height="1000"></canvas>
+    <div class="pointer"><svg viewBox="0 0 40 50"><path d="M20 50 L2 6 Q20 -4 38 6 Z" fill="#fff" stroke="#b3202a" stroke-width="4"/></svg></div>
+    <div class="hub"><img src="assets/img/shield.webp" alt=""></div>
+  </div>
+  <div class="wheel-side">
+    <h2>Spin to <span>win!</span></h2>
+    <p class="how">Press and hold the button to power up.<br>Let go to spin!</p>
+    <button class="hold-btn" id="hold-btn"><span class="fill" id="hold-fill"></span><span class="lbl" id="hold-lbl">Hold<br>to spin</span></button>
+    <div class="power" id="power"></div>
+  </div>
+</section>
+
+<section class="result" id="result" aria-live="assertive">
+  <div class="card">
+    <div class="small">Congratulations &mdash; you won</div>
+    <h3 id="prize-name"></h3>
+    <p>Show this screen to a TPP team member at Booth #527 to claim your prize.</p>
+    <div class="actions">
+      <button class="btn" id="result-done">Done</button>
+    </div>
+  </div>
+</section>
+<canvas id="confetti"></canvas>
+
 <section class="attract" id="attract" aria-label="Promo video — touch to explore">
   <video id="promo" src="videos/msm-loop.mp4" poster="videos/poster.jpg" loop playsinline preload="auto"></video>
   <div class="touch-hint">
@@ -320,6 +490,8 @@
     rv:        { title: "RV Park 'n' Protect" },
     container: { title: "Portable Container Protection" },
     flex:      { title: "Flex Space" },
+    claimspros:{ title: "ClaimsPros" },
+    safehugg:  { title: "SafeHugg" },
   };
   const IDLE_MS = 60 * 1000;   // after 60s without a touch, go back to the looping promo video
 
@@ -333,10 +505,11 @@
   }
   function goHome() {
     product.classList.remove("open");
+    closeWheel();
     history.replaceState(null, "", location.pathname);
   }
 
-  document.querySelectorAll(".tile").forEach(t =>
+  document.querySelectorAll(".tile, .partner[data-product]").forEach(t =>
     t.addEventListener("click", () => openProduct(t.dataset.product)));
   document.getElementById("back").addEventListener("click", goHome);
 
@@ -376,6 +549,157 @@
   addEventListener("contextmenu", e => e.preventDefault());
   addEventListener("gesturestart", e => e.preventDefault());
 
+  // ---------------- Prize wheel: press & hold to power up, release to spin ----------------
+  // Edit prizes here. "weight" sets how often a prize comes up (higher = more likely).
+  const PRIZES = [
+    { label: "Visa Gift Card",         color: "#b3202a", text: "#fff",    weight: 1 },
+    { label: "Domino's Gift Card",     color: "#ffffff", text: "#1a1a1f", weight: 1 },
+    { label: "Starbucks Gift Card",    color: "#1a1a1f", text: "#fff",    weight: 1 },
+    { label: "Chick-fil-A Gift Card",  color: "#ffffff", text: "#1a1a1f", weight: 1 },
+    { label: "Chipotle Gift Card",     color: "#b3202a", text: "#fff",    weight: 1 },
+    { label: "Olive Garden Gift Card", color: "#ffffff", text: "#1a1a1f", weight: 1 },
+    { label: "Panera Gift Card",       color: "#1a1a1f", text: "#fff",    weight: 1 },
+    { label: "Subway Gift Card",       color: "#ffffff", text: "#1a1a1f", weight: 1 },
+  ];
+  const wheelScreen = document.getElementById("wheel-screen");
+  const wheelCanvas = document.getElementById("wheel");
+  const wctx = wheelCanvas.getContext("2d");
+  const holdBtn = document.getElementById("hold-btn");
+  const holdFill = document.getElementById("hold-fill");
+  const holdLbl = document.getElementById("hold-lbl");
+  const powerTxt = document.getElementById("power");
+  const result = document.getElementById("result");
+  const SEG = (Math.PI * 2) / PRIZES.length;
+  let angle = 0, spinning = false, holding = false, holdStart = 0, power = 0, raf = 0;
+
+  function drawWheel() {
+    const c = wctx, R = wheelCanvas.width / 2;
+    c.clearRect(0, 0, R * 2, R * 2);
+    c.save(); c.translate(R, R); c.rotate(angle);
+    PRIZES.forEach((p, i) => {
+      // slice i sits under the pointer (top) when angle == -i * SEG
+      const a0 = -Math.PI / 2 + i * SEG - SEG / 2;
+      c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, R * 0.94, a0, a0 + SEG); c.closePath();
+      c.fillStyle = p.color; c.fill();
+      c.lineWidth = 6; c.strokeStyle = "#1a1a1f"; c.stroke();
+      const mid = a0 + SEG / 2;
+      // keep labels upright: slices currently on the left half are drawn flipped
+      const flip = Math.cos(mid + angle) < 0;
+      c.save(); c.rotate(mid);
+      if (flip) c.rotate(Math.PI);
+      c.fillStyle = p.text; c.textAlign = flip ? "left" : "right"; c.textBaseline = "middle";
+      const x = flip ? -R * 0.86 : R * 0.86;
+      c.font = Math.round(R * 0.085) + "px Anton, Impact, sans-serif";
+      c.fillText(p.label.replace(" Gift Card", "").toUpperCase(), x, -R * 0.02);
+      c.font = Math.round(R * 0.05) + "px Oswald, sans-serif";
+      c.fillText("GIFT CARD", x, R * 0.07);
+      c.restore();
+    });
+    c.restore();
+    // outer rim with chasing lights
+    c.beginPath(); c.arc(R, R, R * 0.97, 0, Math.PI * 2); c.lineWidth = R * 0.06; c.strokeStyle = "#1a1a1f"; c.stroke();
+    for (let i = 0; i < 24; i++) {
+      const t = i / 24 * Math.PI * 2, on = Math.floor(performance.now() / 250 + i) % 2 === 0;
+      c.beginPath(); c.arc(R + Math.cos(t) * R * 0.97, R + Math.sin(t) * R * 0.97, R * 0.018, 0, Math.PI * 2);
+      c.fillStyle = on ? "#ffe9a8" : "#e2343e"; c.fill();
+    }
+  }
+  function loop() { drawWheel(); raf = requestAnimationFrame(loop); }
+
+  function openWheel() {
+    product.classList.remove("open");
+    wheelScreen.classList.add("open");
+    history.replaceState(null, "", "#wheel");
+    resetHold();
+    cancelAnimationFrame(raf); loop();
+  }
+  function closeWheel() {
+    wheelScreen.classList.remove("open"); result.classList.remove("open");
+    cancelAnimationFrame(raf);
+  }
+  function resetHold() {
+    holding = false; power = 0; holdFill.style.height = "0%";
+    holdBtn.classList.remove("holding"); holdLbl.innerHTML = "Hold<br>to spin"; powerTxt.textContent = "";
+    holdBtn.disabled = spinning;
+  }
+  function pickPrize() {
+    const total = PRIZES.reduce((sum, p) => sum + p.weight, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < PRIZES.length; i++) { r -= PRIZES[i].weight; if (r <= 0) return i; }
+    return PRIZES.length - 1;
+  }
+  function startHold(e) {
+    if (spinning || holding) return;
+    e.preventDefault();
+    if (e.pointerId !== undefined && holdBtn.setPointerCapture) holdBtn.setPointerCapture(e.pointerId);
+    holding = true; holdStart = performance.now();
+    holdBtn.classList.add("holding"); holdLbl.textContent = "Let go!";
+    const charge = () => {
+      if (!holding) return;
+      power = Math.min(1, (performance.now() - holdStart) / 2500);   // full power after 2.5s
+      holdFill.style.height = (power * 100) + "%";
+      powerTxt.textContent = "Power " + Math.round(power * 100) + "%";
+      angle += 0.02 + power * 0.06;                                    // wheel creeps forward while charging
+      requestAnimationFrame(charge);
+    };
+    requestAnimationFrame(charge);
+  }
+  function release() {
+    if (!holding || spinning) return;
+    holding = false; spinning = true; holdBtn.disabled = true;
+    holdBtn.classList.remove("holding"); holdLbl.textContent = "Spinning...";
+    const win = pickPrize();
+    const TAU = Math.PI * 2, mod = x => ((x % TAU) + TAU) % TAU;
+    const turns = 4 + Math.round(power * 5);                           // more power = more spins
+    const jitter = (Math.random() - 0.5) * SEG * 0.7;                  // land inside the slice, not dead centre
+    const start = angle;
+    const end = start + turns * TAU + mod((-win * SEG + jitter) - start);
+    const dur = 4200 + power * 2200, t0 = performance.now();
+    const ease = x => 1 - Math.pow(1 - x, 4);
+    const step = now => {
+      const x = Math.min(1, (now - t0) / dur);
+      angle = start + (end - start) * ease(x);
+      if (x < 1) requestAnimationFrame(step);
+      else { spinning = false; showPrize(win); }
+    };
+    requestAnimationFrame(step);
+  }
+  function showPrize(i) {
+    document.getElementById("prize-name").textContent = PRIZES[i].label;
+    result.classList.add("open");
+    confetti();
+  }
+  function confetti() {
+    const cv = document.getElementById("confetti"), c = cv.getContext("2d");
+    cv.width = innerWidth; cv.height = innerHeight;
+    const cols = ["#e2343e", "#ffffff", "#ffd166", "#b3202a", "#2f7df6"];
+    const bits = Array.from({ length: 180 }, () => ({
+      x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.5,
+      vx: (Math.random() - 0.5) * 4, vy: 3 + Math.random() * 5, r: 6 + Math.random() * 8,
+      a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3, col: cols[Math.floor(Math.random() * cols.length)],
+    }));
+    const t0 = performance.now();
+    const tick = now => {
+      c.clearRect(0, 0, cv.width, cv.height);
+      bits.forEach(b => {
+        b.x += b.vx; b.y += b.vy; b.a += b.va;
+        c.save(); c.translate(b.x, b.y); c.rotate(b.a); c.fillStyle = b.col; c.fillRect(-b.r / 2, -b.r / 4, b.r, b.r / 2); c.restore();
+      });
+      if (now - t0 < 4000) requestAnimationFrame(tick); else c.clearRect(0, 0, cv.width, cv.height);
+    };
+    requestAnimationFrame(tick);
+  }
+  document.getElementById("open-wheel").addEventListener("click", openWheel);
+  document.getElementById("wheel-back").addEventListener("click", goHome);
+  holdBtn.addEventListener("pointerdown", startHold);
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => holdBtn.addEventListener(ev, release));
+  holdBtn.addEventListener("contextmenu", e => e.preventDefault());   // long-press on touch screens
+  addEventListener("keydown", e => { if (e.code === "Space" && wheelScreen.classList.contains("open") && !e.repeat) startHold(e); });
+  addEventListener("keyup", e => { if (e.code === "Space") release(); });
+  document.getElementById("result-done").addEventListener("click", () => {
+    result.classList.remove("open"); resetHold();
+  });
+
   // Full-screen toggle for the promo video. Takes the whole kiosk page full screen so touches
   // keep working; falls back to the native video player where page full screen isn't available (iPhone).
   const fsBtn = document.getElementById("fs-btn");
@@ -396,6 +720,7 @@
 
   // Deep link support (#secure, #rv, ...) skips the promo; otherwise start on the loop
   if (PRODUCTS[location.hash.slice(1)]) openProduct(location.hash.slice(1));
+  else if (location.hash === "#wheel") openWheel();
   else startAttract();
 </script>
 </body>
