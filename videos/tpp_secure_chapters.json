@@ -1,0 +1,51 @@
+{
+ "id": "tpp_secure",
+ "title": "TPP SECURE",
+ "duration": 285.32,
+ "chapters": [
+  {
+   "title": "Intro",
+   "start": 0.0
+  },
+  {
+   "title": "The Gap",
+   "start": 19.85
+  },
+  {
+   "title": "What It Is",
+   "start": 58.71
+  },
+  {
+   "title": "What It Pays",
+   "start": 79.3
+  },
+  {
+   "title": "What's Covered",
+   "start": 108.36
+  },
+  {
+   "title": "Why Tenants Love It",
+   "start": 137.8
+  },
+  {
+   "title": "Plans",
+   "start": 160.66
+  },
+  {
+   "title": "At The Counter",
+   "start": 179.66
+  },
+  {
+   "title": "Claims",
+   "start": 209.08
+  },
+  {
+   "title": "For Operators",
+   "start": 235.03
+  },
+  {
+   "title": "Wrap-up",
+   "start": 261.47
+  }
+ ]
+}
