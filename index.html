@@ -912,10 +912,11 @@
   addEventListener("keyup", e => { if (e.code === "Space") release(); });
   // ---------------- Gift card claim: email after the spin ----------------
   // Every entry is saved on this kiosk first (so nothing is lost if the Wi-Fi drops), then sent to
-  // PRIZE_ENDPOINT: a Zapier "Catch Hook" that logs the entry and emails the winner from
-  // tdelacruz@tenantpropertyprotection.com (Microsoft Outlook). Unsent entries retry every minute.
+  // PRIZE_ENDPOINT: the "TPP Prize Wheel" Google Apps Script web app (ssa-vegas-2026/script/prize_wheel_apps_script.gs)
+  // on teond1090@gmail.com. It adds the winner to the "TPP Prize Wheel Winners" sheet and emails them
+  // (replies go to tdelacruz@tenantpropertyprotection.com). Unsent entries retry every minute.
   // Staff tools (counts, CSV download, retry): open the kiosk with #staff at the end of the URL.
-  const PRIZE_ENDPOINT = "";   // paste the Zap's webhook URL here (https://hooks.zapier.com/hooks/catch/...)
+  const PRIZE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxIFtva6IDLTqA2IYSAWJYaQz-RvYRuhVq2w3sPz9-hkGot22SonW3y-mH5bS3_QWdF/exec";
   const KIOSK_NAME = "MSM Atlanta - Booth 527";
   const STORE = "tpp-prize-entries";
   let wonPrize = "";
@@ -930,7 +931,7 @@
   async function sendEntry(entry) {
     if (!PRIZE_ENDPOINT || !navigator.onLine) return false;
     try {
-      // Form-encoded + no-cors: no CORS preflight, and Zapier splits it into named fields automatically
+      // Form-encoded + no-cors: no CORS preflight; Apps Script reads the fields from e.parameter
       const body = new URLSearchParams({
         email: entry.email, prize: entry.prize, marketing_opt_in: entry.marketing_opt_in ? "Yes" : "No",
         kiosk: entry.kiosk, time: entry.time, id: entry.id,
