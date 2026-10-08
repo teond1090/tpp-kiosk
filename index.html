@@ -912,10 +912,10 @@
   addEventListener("keyup", e => { if (e.code === "Space") release(); });
   // ---------------- Gift card claim: email after the spin ----------------
   // Every entry is saved on this kiosk first (so nothing is lost if the Wi-Fi drops), then sent to
-  // PRIZE_ENDPOINT: a Power Automate flow on the TPP Microsoft 365 account that logs the entry and emails
-  // the winner from tdelacruz@tenantpropertyprotection.com. Unsent entries retry every minute.
+  // PRIZE_ENDPOINT: a Zapier "Catch Hook" that logs the entry and emails the winner from
+  // tdelacruz@tenantpropertyprotection.com (Microsoft Outlook). Unsent entries retry every minute.
   // Staff tools (counts, CSV download, retry): open the kiosk with #staff at the end of the URL.
-  const PRIZE_ENDPOINT = "";   // paste the flow's "HTTP POST URL" here
+  const PRIZE_ENDPOINT = "";   // paste the Zap's webhook URL here (https://hooks.zapier.com/hooks/catch/...)
   const KIOSK_NAME = "MSM Atlanta - Booth 527";
   const STORE = "tpp-prize-entries";
   let wonPrize = "";
@@ -930,8 +930,12 @@
   async function sendEntry(entry) {
     if (!PRIZE_ENDPOINT || !navigator.onLine) return false;
     try {
-      // text/plain + no-cors = no CORS preflight, so the browser just delivers it; the flow parses the JSON
-      await fetch(PRIZE_ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(entry) });
+      // Form-encoded + no-cors: no CORS preflight, and Zapier splits it into named fields automatically
+      const body = new URLSearchParams({
+        email: entry.email, prize: entry.prize, marketing_opt_in: entry.marketing_opt_in ? "Yes" : "No",
+        kiosk: entry.kiosk, time: entry.time, id: entry.id,
+      });
+      await fetch(PRIZE_ENDPOINT, { method: "POST", mode: "no-cors", body });
       return true;
     } catch (e) { return false; }
   }
