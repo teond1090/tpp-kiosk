@@ -219,10 +219,10 @@
     position: fixed; inset: 0; z-index: 12; display: none;
     background: radial-gradient(70% 80% at 50% 40%, #2a0b0e 0%, #0b0b0d 70%);
     color: #fff; padding: var(--gutter);
-    grid-template-columns: 1.15fr 1fr; align-items: center; gap: clamp(16px, 3vw, 64px);
+    grid-template-columns: 1.6fr 1fr; align-items: center; gap: clamp(16px, 2.5vw, 48px);
   }
   .wheel-screen.open { display: grid; animation: fade .3s ease both; }
-  .wheel-wrap { position: relative; justify-self: center; width: min(46vw, 82vh); aspect-ratio: 1; }
+  .wheel-wrap { position: relative; justify-self: center; width: min(60vw, calc(100vh - 2 * var(--gutter) - 24px)); aspect-ratio: 1; margin-top: 2vh; }
   #wheel { width: 100%; height: 100%; display: block; }
   .pointer { position: absolute; left: 50%; top: -3%; width: 9%; transform: translateX(-50%); z-index: 1; }
   .pointer svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
@@ -272,6 +272,36 @@
     font-size: clamp(16px, 1.4vw, 28px); padding: 12px 28px; background: var(--red); color: #fff;
   }
   #confetti { position: fixed; inset: 0; z-index: 15; pointer-events: none; }
+  .result .card { width: min(92vw, 1100px); max-width: none; max-height: 96vh; overflow: auto; }
+  .claim { margin-top: clamp(10px, 2vh, 24px); }
+  .claim label { display: block; font-weight: 700; color: var(--ink); font-size: clamp(16px, 1.4vw, 26px); margin-bottom: 8px; }
+  .email-box {
+    width: 100%; font: 600 clamp(22px, 2.2vw, 40px) "Inter", system-ui, sans-serif; text-align: center;
+    padding: 14px 18px; border-radius: 16px; border: 3px solid #d5d5dc; color: var(--ink); background: #f7f7f9; outline: none;
+  }
+  .email-box:focus { border-color: var(--red); background: #fff; }
+  .email-box.bad { border-color: #e2343e; animation: shake .3s; }
+  @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .claim .err { color: #c3202a; min-height: 1.3em; font-size: clamp(14px, 1.2vw, 22px); margin-top: 6px; }
+  .optin { display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 6px; color: var(--muted); font-size: clamp(14px, 1.2vw, 22px); cursor: pointer; }
+  .optin input { width: 28px; height: 28px; accent-color: var(--red); }
+  .kb { margin-top: clamp(10px, 1.6vh, 20px); display: grid; gap: 8px; user-select: none; }
+  .kb .row { display: flex; gap: 8px; justify-content: center; }
+  .kb button {
+    flex: 1 1 0; max-width: 92px; min-height: clamp(44px, 6.2vh, 72px); border: 0; border-radius: 12px; cursor: pointer;
+    background: #ececf0; color: var(--ink); font: 700 clamp(16px, 1.6vw, 28px) "Inter", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  .kb button:active { background: #d0d0d8; transform: scale(.96); }
+  .kb button.wide { max-width: 200px; flex-grow: 2; font-size: clamp(14px, 1.3vw, 24px); }
+  .kb button.dark { background: #2a2a31; color: #fff; }
+  .claim .actions .btn.ghost { background: #ececf0; color: var(--ink); }
+  .btn:disabled { opacity: .5; }
+  .sent .big { font-family: "Anton", sans-serif; text-transform: uppercase; font-size: clamp(34px, 4vw, 80px); line-height: 1.05; margin: 8px 0; }
+  .sent .mail { font-weight: 700; color: var(--ink); word-break: break-all; }
+  .staff { position: fixed; inset: auto 20px 20px auto; z-index: 30; background: #fff; color: var(--ink); border-radius: 16px; padding: 18px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.5); display: none; font-size: 18px; }
+  .staff.open { display: block; }
+  .staff .btn { font-size: 16px; padding: 10px 18px; margin: 10px 8px 0 0; }
 
   /* ---------- footer ---------- */
   footer {
@@ -422,7 +452,7 @@
     .partners { grid-template-columns: 1fr 1fr; }
     .partner.spin { grid-column: 1 / -1; }
     .wheel-screen { grid-template-columns: 1fr; align-content: center; }
-    .wheel-wrap { width: min(86vw, 52vh); }
+    .wheel-wrap { width: min(94vw, 62vh); }
     header { flex-direction: column; align-items: flex-start; }
     .headline { text-align: left; }
   }
@@ -582,15 +612,38 @@
 
 <section class="result" id="result" aria-live="assertive">
   <div class="card">
-    <div class="small">Congratulations &mdash; you won</div>
-    <h3 id="prize-name"></h3>
-    <p>Show this screen to a TPP team member at Booth #527 to claim your prize.</p>
-    <div class="actions">
-      <button class="btn" id="result-done">Done</button>
+    <div id="claim-step">
+      <div class="small">Congratulations &mdash; you won</div>
+      <h3 id="prize-name"></h3>
+      <form class="claim" id="claim-form" novalidate>
+        <label for="claim-email">Enter your email and we'll send your e-gift card</label>
+        <input class="email-box" id="claim-email" type="email" inputmode="none" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="you@company.com">
+        <div class="err" id="claim-err"></div>
+        <label class="optin"><input type="checkbox" id="claim-optin"> Also send me occasional updates from Tenant Property Protection</label>
+        <div class="kb" id="kb"></div>
+        <div class="actions">
+          <button type="button" class="btn ghost" id="result-done">No thanks</button>
+          <button type="submit" class="btn" id="claim-send">Send my gift card</button>
+        </div>
+      </form>
+    </div>
+    <div id="sent-step" class="sent" hidden>
+      <div class="small">You're all set!</div>
+      <div class="big">Check your inbox</div>
+      <p>Your <b id="sent-prize"></b> will be emailed to<br><span class="mail" id="sent-email"></span></p>
+      <p>It comes from tdelacruz@tenantpropertyprotection.com. Thanks for stopping by Booth #527!</p>
+      <div class="actions"><button type="button" class="btn" id="sent-done">Done</button></div>
     </div>
   </div>
 </section>
 <canvas id="confetti"></canvas>
+<section class="staff" id="staff" aria-label="Staff tools">
+  <b>Prize entries on this kiosk</b>
+  <div id="staff-stats"></div>
+  <button class="btn" id="staff-csv">Download CSV</button>
+  <button class="btn" id="staff-retry">Retry sending</button>
+  <button class="btn" id="staff-close">Close</button>
+</section>
 
 <section class="attract" id="attract" aria-label="Promo video — touch to explore">
   <video id="promo" poster="videos/poster.jpg" loop playsinline preload="auto"></video>
@@ -824,7 +877,9 @@
     requestAnimationFrame(step);
   }
   function showPrize(i) {
-    document.getElementById("prize-name").textContent = PRIZES[i].label;
+    wonPrize = PRIZES[i].label;
+    document.getElementById("prize-name").textContent = wonPrize;
+    claimReset();
     result.classList.add("open");
     confetti();
   }
@@ -853,11 +908,125 @@
   holdBtn.addEventListener("pointerdown", startHold);
   ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => holdBtn.addEventListener(ev, release));
   holdBtn.addEventListener("contextmenu", e => e.preventDefault());   // long-press on touch screens
-  addEventListener("keydown", e => { if (e.code === "Space" && wheelScreen.classList.contains("open") && !e.repeat) startHold(e); });
+  addEventListener("keydown", e => { if (e.code === "Space" && wheelScreen.classList.contains("open") && !result.classList.contains("open") && !e.repeat) startHold(e); });
   addEventListener("keyup", e => { if (e.code === "Space") release(); });
-  document.getElementById("result-done").addEventListener("click", () => {
-    result.classList.remove("open"); resetHold();
+  // ---------------- Gift card claim: email after the spin ----------------
+  // Every entry is saved on this kiosk first (so nothing is lost if the Wi-Fi drops), then sent to
+  // PRIZE_ENDPOINT: a Power Automate flow on the TPP Microsoft 365 account that logs the entry and emails
+  // the winner from tdelacruz@tenantpropertyprotection.com. Unsent entries retry every minute.
+  // Staff tools (counts, CSV download, retry): open the kiosk with #staff at the end of the URL.
+  const PRIZE_ENDPOINT = "";   // paste the flow's "HTTP POST URL" here
+  const KIOSK_NAME = "MSM Atlanta - Booth 527";
+  const STORE = "tpp-prize-entries";
+  let wonPrize = "";
+  const emailEl = document.getElementById("claim-email");
+  const errEl = document.getElementById("claim-err");
+  const claimStep = document.getElementById("claim-step"), sentStep = document.getElementById("sent-step");
+
+  const loadEntries = () => { try { return JSON.parse(localStorage.getItem(STORE) || "[]"); } catch (e) { return []; } };
+  const saveEntries = list => { try { localStorage.setItem(STORE, JSON.stringify(list)); } catch (e) {} };
+  const validEmail = v => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v);
+
+  async function sendEntry(entry) {
+    if (!PRIZE_ENDPOINT || !navigator.onLine) return false;
+    try {
+      // text/plain + no-cors = no CORS preflight, so the browser just delivers it; the flow parses the JSON
+      await fetch(PRIZE_ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(entry) });
+      return true;
+    } catch (e) { return false; }
+  }
+  let flushing = false;
+  async function flushEntries() {
+    if (flushing) return;
+    flushing = true;
+    const list = loadEntries();
+    for (const e of list) if (!e.sent && await sendEntry(e)) { e.sent = new Date().toISOString(); saveEntries(list); }
+    flushing = false;
+    renderStaff();
+  }
+  setInterval(flushEntries, 60 * 1000);
+  addEventListener("online", flushEntries);
+  setTimeout(flushEntries, 5000);
+
+  function claimReset() {
+    emailEl.value = ""; errEl.textContent = ""; emailEl.classList.remove("bad");
+    document.getElementById("claim-optin").checked = false;
+    document.getElementById("claim-send").disabled = false;
+    claimStep.hidden = false; sentStep.hidden = true;
+  }
+  function closeResult() { result.classList.remove("open"); resetHold(); }
+
+  document.getElementById("claim-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = emailEl.value.trim().toLowerCase();
+    if (!validEmail(email)) {
+      errEl.textContent = "Please check your email address.";
+      emailEl.classList.remove("bad"); void emailEl.offsetWidth; emailEl.classList.add("bad");
+      return;
+    }
+    const list = loadEntries();
+    const dupe = list.find(x => x.email === email);
+    if (dupe) { errEl.textContent = "This email already has a prize: " + dupe.prize + ". One gift card per person."; return; }
+    const entry = {
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email, prize: wonPrize,
+      marketing_opt_in: document.getElementById("claim-optin").checked,
+      kiosk: KIOSK_NAME, time: new Date().toISOString(), sent: null,
+    };
+    list.push(entry); saveEntries(list);
+    document.getElementById("claim-send").disabled = true;
+    document.getElementById("sent-prize").textContent = wonPrize;
+    document.getElementById("sent-email").textContent = email;
+    claimStep.hidden = true; sentStep.hidden = false;
+    flushEntries();
   });
+  document.getElementById("result-done").addEventListener("click", closeResult);
+  document.getElementById("sent-done").addEventListener("click", closeResult);
+
+  // On-screen keyboard (kiosk touch screens often have no system keyboard)
+  const KB = [
+    ["1","2","3","4","5","6","7","8","9","0"],
+    ["q","w","e","r","t","y","u","i","o","p"],
+    ["a","s","d","f","g","h","j","k","l","@"],
+    ["z","x","c","v","b","n","m",".","-","_"],
+    ["@gmail.com","@yahoo.com","@outlook.com",".com","⌫"],
+  ];
+  const kbEl = document.getElementById("kb");
+  KB.forEach(row => {
+    const r = document.createElement("div"); r.className = "row";
+    row.forEach(k => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = k;
+      if (k.length > 1) b.className = "wide";
+      if (k === "⌫") b.className = "wide dark";
+      b.addEventListener("click", () => {
+        errEl.textContent = ""; emailEl.classList.remove("bad");
+        emailEl.value = k === "⌫" ? emailEl.value.slice(0, -1) : emailEl.value + k;
+        resetIdle();
+      });
+      r.appendChild(b);
+    });
+    kbEl.appendChild(r);
+  });
+  emailEl.addEventListener("input", () => { errEl.textContent = ""; emailEl.classList.remove("bad"); });
+
+  // Staff panel: kiosk URL + #staff
+  const staffEl = document.getElementById("staff");
+  function renderStaff() {
+    if (!staffEl.classList.contains("open")) return;
+    const list = loadEntries(), pending = list.filter(x => !x.sent).length;
+    document.getElementById("staff-stats").textContent =
+      list.length + " entries, " + pending + " waiting to send" + (PRIZE_ENDPOINT ? "" : " (no endpoint set)");
+  }
+  document.getElementById("staff-csv").addEventListener("click", () => {
+    const rows = [["time", "email", "prize", "marketing_opt_in", "kiosk", "sent"]]
+      .concat(loadEntries().map(x => [x.time, x.email, x.prize, x.marketing_opt_in, x.kiosk, x.sent || ""]));
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = "tpp-prize-entries.csv"; a.click();
+  });
+  document.getElementById("staff-retry").addEventListener("click", flushEntries);
+  document.getElementById("staff-close").addEventListener("click", () => { staffEl.classList.remove("open"); history.replaceState(null, "", location.pathname + location.search); });
+  if (location.hash === "#staff") { staffEl.classList.add("open"); renderStaff(); }
 
   // ---------------- Interactive product player ----------------
   const player = document.getElementById("player");
