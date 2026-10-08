@@ -536,7 +536,7 @@
 </section>
 
 <section class="player" id="player" aria-label="Product video">
-  <video id="pvideo" playsinline preload="metadata"></video>
+  <video id="pvideo" playsinline preload="auto"></video>
   <div class="topbar">
     <button class="back" id="player-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Home</button>
     <div class="ptitle" id="ptitle"></div>
@@ -593,7 +593,7 @@
 <canvas id="confetti"></canvas>
 
 <section class="attract" id="attract" aria-label="Promo video — touch to explore">
-  <video id="promo" src="videos/msm-loop.mp4" poster="videos/poster.jpg" loop playsinline preload="auto"></video>
+  <video id="promo" poster="videos/poster.jpg" loop playsinline preload="auto"></video>
   <div class="touch-hint">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.03-.24-.03-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.38z"/></svg>
     Touch the screen to explore
@@ -605,8 +605,7 @@
 </section>
 
 <script>
-  // Product videos get wired in here in the next step (e.g. videos/secure.mp4).
-  // video: file in videos/ (plus <name>_chapters.json for the chapter chips). No video yet -> "coming soon" screen.
+  // video: file in videos/ (plus <name>_chapters.json for the chapter chips and <name>_poster.jpg). No video -> "coming soon".
   const PRODUCTS = {
     secure:    { title: "TPP Secure", video: "tpp_secure", img: "assets/img/secure.webp" },
     rv:        { title: "RV Park 'n' Protect", video: "rv_park", img: "assets/img/rv.webp" },
@@ -616,6 +615,42 @@
     safehugg:  { title: "SafeHugg", video: "safehugg", img: "assets/img/partners/safehugg-photo.webp" },
   };
   const IDLE_MS = 60 * 1000;   // after 60s without a touch, go back to the looping promo video
+
+  // Videos are cached on the kiosk itself (sw.js) so they open instantly and survive flaky booth Wi-Fi.
+  // Bump VIDEO_VER whenever any video file changes, so kiosks drop the old copies and fetch the new ones.
+  const VIDEO_VER = "2";
+  const vurl = name => "videos/" + name + ".mp4?v=" + VIDEO_VER;
+  document.getElementById("promo").src = vurl("msm-loop");
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").then(() => setTimeout(cacheVideos, 4000)).catch(() => {});
+  }
+  // If a video ever errors mid-play (Wi-Fi blip, cache handover), reload it and carry on from the same spot.
+  function selfHeal(v, shouldPlay) {
+    let last = 0;
+    v.addEventListener("error", () => {
+      if (!v.getAttribute("src") || Date.now() - last < 3000) return;
+      last = Date.now();
+      const t = v.currentTime, src = v.getAttribute("src").replace(/&r=\d+$/, "");
+      v.src = src + "&r=" + Date.now();   // new URL = fresh media pipeline (sw.js ignores the &r=)
+      v.addEventListener("loadedmetadata", () => { v.currentTime = t; if (shouldPlay()) v.play().catch(() => {}); }, { once: true });
+    });
+  }
+  selfHeal(document.getElementById("promo"), () => document.getElementById("attract").classList.contains("on"));
+  selfHeal(document.getElementById("pvideo"), () => document.getElementById("player").classList.contains("open"));
+  async function cacheVideos() {
+    try {
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+      const name = "tpp-videos-" + VIDEO_VER;
+      for (const k of await caches.keys()) if (k.startsWith("tpp-videos-") && k !== name) await caches.delete(k);
+      const cache = await caches.open(name);
+      const files = ["msm-loop", ...Object.values(PRODUCTS).map(P => P.video).filter(Boolean)];
+      for (const f of files) {                       // one at a time so the promo keeps its bandwidth
+        if (await cache.match(vurl(f))) continue;
+        const r = await fetch(vurl(f));
+        if (r.status === 200) await cache.put(vurl(f), r);
+      }
+    } catch (e) { /* no cache (private window, quota): videos just stream */ }
+  }
 
   const product = document.getElementById("product");
   const title = document.getElementById("product-title");
@@ -846,8 +881,10 @@
     const P = PRODUCTS[id];
     document.getElementById("ptitle").textContent = P.title;
     endEl.classList.remove("open");
-    pv.src = "videos/" + P.video + ".mp4";
+    pv.poster = "videos/" + P.video + "_poster.jpg";   // first frame shows instantly, never a black screen
+    pv.src = vurl(P.video);
     pv.muted = false;
+    pv.play().catch(() => { pv.muted = true; pv.play().catch(() => {}); });   // start now; chapters load alongside
     player.classList.add("open");
     history.replaceState(null, "", "#" + id);
     marks = [];
@@ -861,8 +898,8 @@
         b.addEventListener("click", e => { e.stopPropagation(); pv.currentTime = m.start + 0.05; pv.play(); });
         chipsEl.appendChild(b);
       });
+      placeTicks(); syncUI();   // metadata may already be in (video starts before the chapters arrive)
     } catch (e) { /* no chapter file: plain player */ }
-    pv.play().catch(() => { pv.muted = true; pv.play().catch(() => {}); });
     showUI();
   }
   function closePlayer() {
