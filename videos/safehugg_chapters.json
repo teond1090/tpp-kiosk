@@ -1,7 +1,7 @@
 {
  "id": "safehugg",
  "title": "SAFEHUGG",
- "duration": 261.53,
+ "duration": 256.87,
  "chapters": [
   {
    "title": "Intro",
@@ -9,47 +9,47 @@
   },
   {
    "title": "What It Is",
-   "start": 19.32
+   "start": 23.82
   },
   {
    "title": "Virtual Doctor",
-   "start": 37.2
+   "start": 41.7
   },
   {
    "title": "Prescriptions",
-   "start": 56.48
+   "start": 60.98
   },
   {
    "title": "Mental Wellness",
-   "start": 72.77
+   "start": 77.27
   },
   {
    "title": "Safe 360",
-   "start": 95.24
+   "start": 99.74
   },
   {
-   "title": "Anywhere, Any Signal",
-   "start": 118.41
+   "title": "Built For Real Life",
+   "start": 122.91
   },
   {
-   "title": "Places & Trips",
-   "start": 143.72
+   "title": "Places",
+   "start": 143.15
   },
   {
    "title": "SafeHugg Zones",
-   "start": 170.15
+   "start": 166.51
   },
   {
    "title": "Hugg Your Manager",
-   "start": 197.03
+   "start": 193.39
   },
   {
    "title": "For Operators",
-   "start": 224.84
+   "start": 221.2
   },
   {
-   "title": "SafeHugg",
-   "start": 246.35
+   "title": "Wrap-up",
+   "start": 242.71
   }
  ]
 }
