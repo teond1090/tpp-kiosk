@@ -671,7 +671,7 @@
 
   // Videos are cached on the kiosk itself (sw.js) so they open instantly and survive flaky booth Wi-Fi.
   // Bump VIDEO_VER whenever any video file changes, so kiosks drop the old copies and fetch the new ones.
-  const VIDEO_VER = "2";
+  const VIDEO_VER = "20261009b";
   const vurl = name => "videos/" + name + ".mp4?v=" + VIDEO_VER;
   document.getElementById("promo").src = vurl("msm-loop");
   if ("serviceWorker" in navigator) {
