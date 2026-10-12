@@ -403,6 +403,7 @@
     transition: opacity .4s ease;
   }
   .player .topbar .back { position: static; }
+  .player .topbar .restart { margin-left: auto; background: rgba(255,255,255,.16); box-shadow: none; }
   .player .ptitle { font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: clamp(20px, 1.9vw, 38px); color: #fff; }
   .player .controls {
     position: absolute; left: 0; right: 0; bottom: 0; padding: clamp(14px, 2vh, 30px) clamp(16px, 2vw, 40px) clamp(16px, 2.4vh, 34px);
@@ -570,12 +571,13 @@
   <div class="topbar">
     <button class="back" id="player-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Home</button>
     <div class="ptitle" id="ptitle"></div>
+    <!-- kept away from play/pause: a tap meant to pause used to land on restart and jump to 0:00 -->
+    <button class="back restart" id="preplay" aria-label="Start over"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/></svg> Start over</button>
   </div>
   <div class="controls">
     <div class="chapters" id="chapters"></div>
     <div class="bar-row">
       <button class="ibtn" id="pplay" aria-label="Play or pause"></button>
-      <button class="ibtn" id="preplay" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/></svg></button>
       <div class="track" id="ptrack"><div class="fill" id="pfill"></div></div>
       <div class="time" id="ptime">0:00 / 0:00</div>
       <button class="ibtn" id="pmute" aria-label="Sound on or off"></button>
