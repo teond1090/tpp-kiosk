@@ -677,16 +677,29 @@
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").then(() => setTimeout(cacheVideos, 4000)).catch(() => {});
   }
-  // If a video ever errors mid-play (Wi-Fi blip, cache handover), reload it and carry on from the same spot.
+  // If a video ever errors or stalls mid-play (Wi-Fi blip, cache handover), reload it and carry on from the same spot.
+  // The resume point is the last position that actually played: by the time "error" fires, some browsers have already
+  // reset currentTime to 0, which used to send the video back to the start halfway through.
   function selfHeal(v, shouldPlay) {
-    let last = 0;
-    v.addEventListener("error", () => {
+    let last = 0, good = 0, base = "", stall;
+    const baseOf = () => (v.getAttribute("src") || "").replace(/&r=\d+$/, "");
+    v.addEventListener("timeupdate", () => {
+      if (baseOf() !== base) { base = baseOf(); good = 0; }        // a different video was opened
+      if (!v.seeking && v.currentTime > 0.5) good = v.currentTime;
+      clearTimeout(stall);
+    });
+    const recover = () => {
+      clearTimeout(stall);
       if (!v.getAttribute("src") || Date.now() - last < 3000) return;
       last = Date.now();
-      const t = v.currentTime, src = v.getAttribute("src").replace(/&r=\d+$/, "");
-      v.src = src + "&r=" + Date.now();   // new URL = fresh media pipeline (sw.js ignores the &r=)
+      const t = baseOf() === base ? Math.max(good, v.currentTime || 0) : (v.currentTime || 0);
+      v.src = baseOf() + "&r=" + Date.now();   // new URL = fresh media pipeline (sw.js ignores the &r=)
       v.addEventListener("loadedmetadata", () => { v.currentTime = t; if (shouldPlay()) v.play().catch(() => {}); }, { once: true });
-    });
+    };
+    v.addEventListener("error", recover);
+    // stuck buffering for 8 s while it should be playing: same recovery
+    v.addEventListener("waiting", () => { clearTimeout(stall); stall = setTimeout(() => { if (shouldPlay() && v.readyState < 3) recover(); }, 8000); });
+    ["playing", "pause", "emptied"].forEach(ev => v.addEventListener(ev, () => clearTimeout(stall)));
   }
   selfHeal(document.getElementById("promo"), () => document.getElementById("attract").classList.contains("on"));
   selfHeal(document.getElementById("pvideo"), () => document.getElementById("player").classList.contains("open"));
@@ -699,6 +712,8 @@
       const files = ["msm-loop", ...Object.values(PRODUCTS).map(P => P.video).filter(Boolean)];
       for (const f of files) {                       // one at a time so the promo keeps its bandwidth
         if (await cache.match(vurl(f))) continue;
+        // never compete with someone watching a product video: wait until the player is closed
+        while (document.getElementById("player").classList.contains("open")) await new Promise(r => setTimeout(r, 5000));
         const r = await fetch(vurl(f));
         if (r.status === 200) await cache.put(vurl(f), r);
       }
