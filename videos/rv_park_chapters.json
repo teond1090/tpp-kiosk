@@ -1,7 +1,7 @@
 {
  "id": "rv_park",
  "title": "RV PARK 'N' PROTECT",
- "duration": 270.87,
+ "duration": 186.8,
  "chapters": [
   {
    "title": "Intro",
@@ -9,43 +9,31 @@
   },
   {
    "title": "The Gap",
-   "start": 16.56
+   "start": 18.83
   },
   {
    "title": "What It Is",
-   "start": 47.26
+   "start": 39.4
   },
   {
    "title": "What's Covered",
-   "start": 70.97
+   "start": 60.34
   },
   {
    "title": "It Travels With Them",
-   "start": 99.81
-  },
-  {
-   "title": "Limits Made Simple",
-   "start": 135.21
+   "start": 91.34
   },
   {
    "title": "Plans",
-   "start": 151.18
-  },
-  {
-   "title": "Not Covered",
-   "start": 171.97
-  },
-  {
-   "title": "At The Counter",
-   "start": 191.3
+   "start": 125.65
   },
   {
    "title": "Claims",
-   "start": 217.62
+   "start": 146.34
   },
   {
    "title": "For Operators",
-   "start": 243.95
+   "start": 163.56
   }
  ]
 }
