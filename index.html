@@ -673,7 +673,7 @@
 
   // Videos are cached on the kiosk itself (sw.js) so they open instantly and survive flaky booth Wi-Fi.
   // Bump VIDEO_VER whenever any video file changes, so kiosks drop the old copies and fetch the new ones.
-  const VIDEO_VER = "20261009b";
+  const VIDEO_VER = "20261012a";
   const vurl = name => "videos/" + name + ".mp4?v=" + VIDEO_VER;
   document.getElementById("promo").src = vurl("msm-loop");
   if ("serviceWorker" in navigator) {
@@ -705,7 +705,12 @@
   }
   selfHeal(document.getElementById("promo"), () => document.getElementById("attract").classList.contains("on"));
   selfHeal(document.getElementById("pvideo"), () => document.getElementById("player").classList.contains("open"));
+  // Background download of every video into the service-worker cache, one at a time. Opening a product video aborts
+  // the download in flight (cacheCtl) so the viewer gets the whole connection; caching resumes when the player closes.
+  let cacheCtl = null, caching = false;
   async function cacheVideos() {
+    if (caching) return;
+    caching = true;
     try {
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
       const name = "tpp-videos-" + VIDEO_VER;
@@ -713,13 +718,21 @@
       const cache = await caches.open(name);
       const files = ["msm-loop", ...Object.values(PRODUCTS).map(P => P.video).filter(Boolean)];
       for (const f of files) {                       // one at a time so the promo keeps its bandwidth
-        if (await cache.match(vurl(f))) continue;
-        // never compete with someone watching a product video: wait until the player is closed
-        while (document.getElementById("player").classList.contains("open")) await new Promise(r => setTimeout(r, 5000));
-        const r = await fetch(vurl(f));
-        if (r.status === 200) await cache.put(vurl(f), r);
+        while (!(await cache.match(vurl(f)))) {
+          // never compete with someone watching a product video: wait until the player is closed
+          while (document.getElementById("player").classList.contains("open")) await new Promise(r => setTimeout(r, 5000));
+          cacheCtl = new AbortController();
+          try {
+            const r = await fetch(vurl(f), { signal: cacheCtl.signal });
+            if (r.status !== 200) break;
+            await cache.put(vurl(f), r);
+          } catch (e) {
+            if (e.name !== "AbortError") throw e;    // aborted for a viewer: wait, then fetch this file again
+          }
+        }
       }
     } catch (e) { /* no cache (private window, quota): videos just stream */ }
+    finally { caching = false; cacheCtl = null; }
   }
 
   const product = document.getElementById("product");
@@ -1072,6 +1085,7 @@
     const P = PRODUCTS[id];
     document.getElementById("ptitle").textContent = P.title;
     endEl.classList.remove("open");
+    if (cacheCtl) cacheCtl.abort();                     // give this video the whole connection
     pv.poster = "videos/" + P.video + "_poster.jpg";   // first frame shows instantly, never a black screen
     pv.src = vurl(P.video);
     pv.muted = false;

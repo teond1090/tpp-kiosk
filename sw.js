@@ -6,6 +6,8 @@
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 
+const CHUNK = 4 * 1024 * 1024;
+
 function cacheName(url) {
   return "tpp-videos-" + (new URL(url).searchParams.get("v") || "0");
 }
@@ -27,6 +29,9 @@ async function fromCache(req) {
   let start = m && m[1] ? +m[1] : 0;
   let end = m && m[2] ? +m[2] : blob.size - 1;
   if (m && !m[1] && m[2]) { start = blob.size - +m[2]; end = blob.size - 1; }   // suffix range: bytes=-N
+  // Answer open-ended ranges (bytes=N-) in 4 MB pieces: handing the player the whole rest of a 90 MB file made
+  // opening a video and jumping to a chapter slow; with small pieces it starts playing as soon as the first arrives.
+  else if (m && !m[2]) end = Math.min(end, start + CHUNK - 1);
   end = Math.min(end, blob.size - 1);
   return new Response(blob.slice(start, end + 1), {
     status: 206,
