@@ -1,7 +1,7 @@
 {
  "id": "flex_space",
  "title": "FLEX SPACE PROTECTION",
- "duration": 252.62,
+ "duration": 175.67,
  "chapters": [
   {
    "title": "Intro",
@@ -9,43 +9,31 @@
   },
   {
    "title": "The Gap",
-   "start": 22.25
+   "start": 22.64
   },
   {
    "title": "What It Is",
-   "start": 48.6
+   "start": 46.15
   },
   {
    "title": "What's Covered",
-   "start": 73.55
+   "start": 66.76
   },
   {
    "title": "How It Pays",
-   "start": 97.59
-  },
-  {
-   "title": "Know The Limits",
-   "start": 125.21
-  },
-  {
-   "title": "Plans",
-   "start": 146.83
+   "start": 93.03
   },
   {
    "title": "At Move-in",
-   "start": 168.38
+   "start": 118.78
   },
   {
    "title": "Claims",
-   "start": 189.31
+   "start": 138.45
   },
   {
    "title": "For Operators",
-   "start": 211.75
-  },
-  {
-   "title": "Flex Space",
-   "start": 236.88
+   "start": 153.09
   }
  ]
 }
