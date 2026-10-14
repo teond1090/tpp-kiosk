@@ -1,7 +1,7 @@
 {
  "id": "claimspros",
  "title": "CLAIMSPROS",
- "duration": 251.28,
+ "duration": 189.7,
  "chapters": [
   {
    "title": "Intro",
@@ -9,47 +9,35 @@
   },
   {
    "title": "The Problem",
-   "start": 20.73
+   "start": 23.68
   },
   {
    "title": "Meet ClaimsPros",
-   "start": 40.65
+   "start": 41.99
   },
   {
    "title": "For Tenants",
-   "start": 64.01
-  },
-  {
-   "title": "How It Works",
-   "start": 84.2
+   "start": 62.35
   },
   {
    "title": "What To Have Ready",
-   "start": 104.71
+   "start": 89.09
   },
   {
    "title": "Real People",
-   "start": 132.32
+   "start": 110.73
   },
   {
    "title": "For Managers",
-   "start": 154.54
-  },
-  {
-   "title": "Real-time Visibility",
-   "start": 178.45
+   "start": 126.13
   },
   {
    "title": "Full-service",
-   "start": 198.33
+   "start": 154.53
   },
   {
-   "title": "The Result",
-   "start": 218.87
-  },
-  {
-   "title": "ClaimsPros",
-   "start": 238.18
+   "title": "Wrap-up",
+   "start": 179.61
   }
  ]
 }
