@@ -1,7 +1,7 @@
 {
  "id": "claimspros",
  "title": "CLAIMSPROS",
- "duration": 189.7,
+ "duration": 160.63,
  "chapters": [
   {
    "title": "Intro",
@@ -16,28 +16,28 @@
    "start": 41.99
   },
   {
-   "title": "For Tenants",
+   "title": "Your Team, Freed Up",
    "start": 62.35
   },
   {
-   "title": "What To Have Ready",
-   "start": 89.09
-  },
-  {
-   "title": "Real People",
-   "start": 110.73
-  },
-  {
-   "title": "For Managers",
-   "start": 126.13
+   "title": "Real-time Visibility",
+   "start": 84.53
   },
   {
    "title": "Full-service",
-   "start": 154.53
+   "start": 103.37
+  },
+  {
+   "title": "Tenants Taken Care Of",
+   "start": 121.05
+  },
+  {
+   "title": "The Result",
+   "start": 136.27
   },
   {
    "title": "Wrap-up",
-   "start": 179.61
+   "start": 150.55
   }
  ]
 }
