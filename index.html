@@ -473,6 +473,177 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 </style>
+<style>
+  /* ================= v3 home: three brand columns + Spin to Win (user, 2026-10-19) ================= */
+  .home { grid-template-rows: auto 1fr auto auto; row-gap: clamp(12px, 2vh, 28px); }
+  .families { position: relative; min-height: 0; display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: clamp(14px, 1.8vw, 34px); }
+  .family {
+    position: relative; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+    border-radius: clamp(16px, 1.5vw, 28px); background: var(--bd);
+    box-shadow: 0 18px 40px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.12);
+    animation: rise .7s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .family:nth-child(2) { animation-delay: .08s; }
+  .family:nth-child(3) { animation-delay: .16s; }
+  .fam-head {
+    display: flex; align-items: center; gap: clamp(10px, 1vw, 18px); color: #fff; min-height: clamp(70px, 10vh, 120px);
+    padding: clamp(10px, 1.4vh, 20px) clamp(14px, 1.3vw, 26px);
+    background: linear-gradient(120deg, var(--bh) 0%, var(--b) 55%, var(--bd) 130%);
+  }
+  .fam-head img { height: clamp(44px, 6.4vh, 84px); width: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+  .fam-head img.wordmark { height: clamp(26px, 3.8vh, 48px); display: block; }
+  .fam-head .kicker { display: block; font-size: clamp(12px, .9vw, 18px); letter-spacing: .12em; text-transform: uppercase; opacity: .9; }
+  .fam-head h2 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(24px, 2.3vw, 46px); line-height: 1; }
+  .fam-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: clamp(8px, 1vh, 14px); padding: clamp(10px, 1.2vh, 16px); }
+  .prod {
+    position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; cursor: pointer;
+    border: 0; border-radius: clamp(12px, 1.1vw, 20px); font: inherit; color: #fff; text-align: left;
+    background: #222 center / cover no-repeat;
+    display: flex; align-items: center; gap: clamp(10px, 1vw, 18px); padding: clamp(8px, 1vh, 16px) clamp(12px, 1.2vw, 22px);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.08);
+    transition: transform .18s ease; -webkit-tap-highlight-color: transparent;
+  }
+  .prod::before { content: ""; position: absolute; inset: 0; background: inherit; background-size: cover; transform: scale(1.03); transition: transform 6s ease; }
+  .prod::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,.72) 45%, rgba(0,0,0,.2) 100%),
+                linear-gradient(90deg, var(--bh) 0 6px, transparent 6px);
+  }
+  .prod > * { position: relative; z-index: 1; }
+  .prod:hover::before { transform: scale(1.1); }
+  .prod:active { transform: scale(.975); box-shadow: inset 0 0 0 3px var(--bh); }
+  .prod .em { height: clamp(38px, 5.6vh, 72px); width: auto; flex: none; filter: drop-shadow(0 3px 8px rgba(0,0,0,.6)); }
+  .prod .nm { flex: 1; min-width: 0; }
+  .prod .nm b { display: block; font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(18px, 1.5vw, 31px); line-height: 1.05; text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+  .prod .nm img.logo-nm { height: clamp(24px, 3.4vh, 42px); width: auto; display: block; }
+  .prod .nm small { display: block; margin-top: 3px; color: #e2e2e8; font-size: clamp(13px, .95vw, 19px); letter-spacing: .02em; }
+  .prod .go { flex: none; width: clamp(34px, 2.6vw, 50px); height: clamp(34px, 2.6vw, 50px); border-radius: 50%; display: grid; place-items: center; background: var(--b); box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+  .prod .go svg { width: 50%; height: 50%; }
+  /* tall cards (RV, SafeHugg): photo-forward, copy at the bottom */
+  .prod.tall { align-items: flex-end; }
+  .prod.tall::after { background: linear-gradient(180deg, rgba(0,0,0,0) 25%, rgba(0,0,0,.6) 62%, rgba(0,0,0,.92) 100%), linear-gradient(0deg, var(--bh) 0 6px, transparent 6px); }
+  .prod.tall .nm b { font-size: clamp(22px, 2vw, 42px); }
+  .prod.tall .em { align-self: flex-end; }
+  .prod .cta-pill {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: clamp(8px, 1vh, 14px);
+    background: var(--b); color: #fff; border-radius: 999px; padding: 8px 18px;
+    font-family: "Anton", sans-serif; letter-spacing: .05em; text-transform: uppercase; font-size: clamp(14px, 1.1vw, 22px);
+    box-shadow: 0 6px 18px rgba(0,0,0,.4); animation: pulse 2.4s ease-in-out infinite;
+  }
+  .prod .cta-pill svg { width: 1em; height: 1em; }
+
+  /* Spin to Win: full-width banner with chasing lights and a sweeping shine */
+  .spin-banner {
+    position: relative; overflow: hidden; cursor: pointer; border: 0; width: 100%; color: #fff; font: inherit;
+    border-radius: clamp(16px, 1.5vw, 28px);
+    display: flex; align-items: center; justify-content: center; gap: clamp(18px, 2.4vw, 48px);
+    padding: clamp(14px, 2vh, 26px) clamp(20px, 2vw, 40px);
+    background: radial-gradient(120% 180% at 15% 0%, #ff4b55 0%, #c21f2a 40%, #6d1016 100%);
+    box-shadow: 0 18px 40px rgba(179,32,42,.4), inset 0 0 0 3px rgba(255,255,255,.18);
+    animation: rise .7s cubic-bezier(.2,.8,.2,1) .25s both, glowpulse 3s ease-in-out infinite;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @keyframes glowpulse { 50% { box-shadow: 0 18px 56px rgba(226,52,62,.75), inset 0 0 0 3px rgba(255,255,255,.3); } }
+  .spin-banner::before {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 30%; left: -40%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.28), transparent);
+    animation: sweep 4.5s ease-in-out infinite;
+  }
+  @keyframes sweep { 60%, 100% { left: 120%; } }
+  .spin-banner > * { position: relative; }
+  .spin-banner:active { transform: scale(.985); }
+  .spin-banner .bulbs {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 9px;
+    background: radial-gradient(circle, #ffe9a8 0 3px, transparent 4px) 0 0 / 30px 30px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    animation: bulbs .9s steps(2) infinite;
+  }
+  @keyframes bulbs { 50% { background-position: 15px 0; } }
+  .spin-banner .spin-icon { width: clamp(76px, 10vh, 132px); height: auto; flex: none; animation: turn 6s linear infinite; filter: drop-shadow(0 6px 14px rgba(0,0,0,.35)); }
+  .spin-banner h2 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(40px, 4.6vw, 92px); line-height: 1; letter-spacing: .02em; text-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  .spin-banner p { font-size: clamp(16px, 1.4vw, 28px); opacity: .95; }
+  .spin-banner .play {
+    flex: none; background: #fff; color: var(--red); border-radius: 999px; padding: clamp(10px, 1.2vh, 16px) clamp(22px, 2vw, 40px);
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: clamp(20px, 1.8vw, 36px);
+    box-shadow: 0 8px 22px rgba(0,0,0,.3); animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  /* ================= product page ================= */
+  .ppage {
+    position: fixed; inset: 0; z-index: 10; display: none; color: #fff; overflow: hidden;
+    background: radial-gradient(80% 90% at 85% 15%, color-mix(in srgb, var(--b) 45%, transparent), transparent 60%),
+                radial-gradient(70% 80% at 0% 100%, color-mix(in srgb, var(--bh) 22%, transparent), transparent 60%), var(--bd);
+    padding: clamp(18px, 3vh, 44px) clamp(22px, 3vw, 60px);
+    grid-template-rows: auto 1fr; row-gap: clamp(12px, 2.4vh, 32px);
+  }
+  .ppage.open { display: grid; animation: fade .3s ease both; }
+  .ppage .ptop { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .ppage .back { position: static; background: var(--b); box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  .ppage .famlogo { height: clamp(40px, 6vh, 80px); width: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+  .ppage .pgrid { min-height: 0; display: grid; grid-template-columns: 1fr 1.15fr; gap: clamp(20px, 3vw, 64px); align-items: center; }
+  .pinfo .pbrand { display: flex; align-items: center; gap: clamp(12px, 1.2vw, 22px); }
+  .pinfo .pbrand img { height: clamp(70px, 12vh, 150px); width: auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
+  .pinfo .pbrand img.wide { height: clamp(40px, 6vh, 76px); }
+  .pinfo .pbrand img[hidden] { display: none; }
+  .pinfo .pbrand img.big { height: clamp(120px, 19vh, 230px); border-radius: 12px; }
+  .pinfo .pkicker { color: var(--bh); font-family: "Anton", sans-serif; letter-spacing: .12em; text-transform: uppercase; font-size: clamp(14px, 1.2vw, 24px); }
+  .pinfo h2 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(36px, 4.2vw, 86px); line-height: 1; }
+  .pinfo .over { margin-top: clamp(14px, 2.4vh, 30px); font-size: clamp(20px, 1.8vw, 36px); line-height: 1.25; font-weight: 500; }
+  .pinfo .desc { margin-top: clamp(10px, 1.6vh, 20px); font-size: clamp(16px, 1.25vw, 25px); line-height: 1.45; color: #d9d9e0; max-width: 46em; }
+  .pinfo .points { margin-top: clamp(14px, 2.4vh, 30px); display: flex; flex-wrap: wrap; gap: 10px; }
+  .pinfo .points span {
+    display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px;
+    background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bh) 70%, transparent);
+    font-family: "Anton", sans-serif; letter-spacing: .05em; text-transform: uppercase; font-size: clamp(13px, 1vw, 20px);
+  }
+  .pinfo .points span::before { content: "\2713"; color: var(--bh); font-family: "Segoe UI Symbol", sans-serif; }
+  .pmedia { min-height: 0; display: flex; flex-direction: column; gap: clamp(12px, 2vh, 24px); }
+  .pvcard {
+    position: relative; aspect-ratio: 16 / 9; border: 0; border-radius: clamp(14px, 1.3vw, 24px); overflow: hidden; cursor: pointer;
+    background: #000 center / cover no-repeat; color: #fff; font: inherit;
+    box-shadow: 0 24px 60px rgba(0,0,0,.55), inset 0 0 0 3px color-mix(in srgb, var(--bh) 60%, transparent);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pvcard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.75), rgba(0,0,0,.05) 55%); }
+  .pvcard > * { z-index: 1; }
+  .pvcard .big-play {
+    position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+    width: clamp(80px, 8vw, 150px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+    background: var(--b); box-shadow: 0 0 0 10px color-mix(in srgb, var(--bh) 35%, transparent), 0 12px 30px rgba(0,0,0,.5);
+  }
+  .pvcard .big-play svg { width: 42%; height: 42%; margin-left: 6%; }
+  .pvcard .vlabel { position: absolute; left: clamp(14px, 1.4vw, 26px); bottom: clamp(12px, 1.4vw, 24px); text-align: left;
+    font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-size: clamp(18px, 1.6vw, 32px); }
+  .pvcard .vlabel small { display: block; font-family: "Oswald", sans-serif; letter-spacing: .02em; text-transform: none; color: #ddd; font-size: .6em; }
+  .pvcard.soon { cursor: default; }
+  .pvcard.soon .big-play { display: none; }
+  .topics-h { font-family: "Anton", sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #cfcfd6; font-size: clamp(14px, 1.1vw, 22px); }
+  .topics { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(8px, 1vh, 12px); }
+  .topic {
+    display: flex; align-items: center; gap: 12px; border: 0; cursor: pointer; text-align: left; color: #fff; font: inherit;
+    background: rgba(255,255,255,.07); border-radius: 14px; padding: clamp(8px, 1.1vh, 14px) clamp(12px, 1vw, 18px);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.1); -webkit-tap-highlight-color: transparent;
+  }
+  .topic:active { transform: scale(.97); background: color-mix(in srgb, var(--b) 60%, transparent); }
+  .topic .n { flex: none; width: 2.1em; height: 2.1em; border-radius: 50%; display: grid; place-items: center; background: var(--b); font-family: "Anton", sans-serif; font-size: clamp(13px, 1vw, 19px); }
+  .topic .t { flex: 1; font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: clamp(15px, 1.15vw, 23px); }
+  .topic .tm { color: #aaa; font-variant-numeric: tabular-nums; font-size: clamp(13px, .95vw, 19px); }
+  /* the player takes the product's brand colour */
+  .player .back, .player .chip.active { background: var(--b, var(--red)); border-color: var(--b, var(--red)); }
+  .player .track .fill { background: var(--bh, var(--red-hi)); }
+
+  @media (orientation: portrait), (max-width: 900px) {
+    .families { grid-template-columns: 1fr; }
+    .ppage { overflow: auto; }
+    .ppage .pgrid { grid-template-columns: 1fr; }
+    .spin-banner { flex-wrap: wrap; }
+  }
+  @media (max-width: 900px), (max-height: 760px) {
+    .family { min-height: 360px; }
+    .prod { min-height: 84px; }
+  }
+</style>
 </head>
 <body>
 
@@ -485,67 +656,44 @@
     </div>
   </header>
 
-  <section class="tiles" aria-label="Products">
-    <button class="tile" data-product="secure" style="background-image:url('assets/img/secure.webp')">
-      <span class="num">01</span>
-      <h2>TPP Secure</h2>
-      <p>Lease-compliant tenant contents protection. Replacement cost, $0 deductible.</p>
-      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-    </button>
-    <button class="tile" data-product="rv" style="background-image:url('assets/img/rv.webp')">
-      <span class="num">02</span>
-      <h2>RV Park 'n' Protect</h2>
-      <p>Outdoor coverage for RVs, boats &amp; automobiles.</p>
-      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-    </button>
-    <button class="tile" data-product="container" style="background-image:url('assets/img/container.webp'); background-position:78% 50%">
-      <span class="num">03</span>
-      <h2>Portable Container Protection</h2>
-      <p>Protection that goes wherever your containers go.</p>
-      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-    </button>
-    <button class="tile" data-product="flex" style="background-image:url('assets/img/flex.webp')">
-      <span class="num">04</span>
-      <h2>Flex Space</h2>
-      <p>Your flex-space tenants are protected, too.</p>
-      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-    </button>
-  </section>
-
-  <div class="section-label">Our partners &amp; giveaways</div>
-
-  <section class="partners" aria-label="Partners and giveaways">
-    <button class="partner photo claimspros" data-product="claimspros" style="background-image:url('assets/img/partners/claimspros-photo.webp'); background-position: 70% 40%">
-      <span class="tag">Partner</span>
-      <img src="assets/img/partners/claimspros-white.webp" alt="ClaimsPros - Storage Claims Specialists">
-      <p>Storage claims specialists.</p>
-      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-    </button>
-    <button class="partner photo safehugg" data-product="safehugg" style="background-image:url('assets/img/partners/safehugg-photo.webp'); background-position: 75% 35%">
-      <span class="tag">Partner</span>
-      <img src="assets/img/partners/safehugg-white.webp" alt="SafeHugg">
-      <p>Health, wellness &amp; personal safety &mdash; wrapped in a Hugg.</p>
-      <span class="cta">Watch video <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-    </button>
-    <button class="partner spin" id="open-wheel">
-      <span class="tag">Giveaway</span>
-      <svg class="spin-icon" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="48" fill="#1a1a1f"/>
-        <g stroke="#1a1a1f" stroke-width="1.5">
-          <path d="M50 50 L50 6 A44 44 0 0 1 81.1 18.9 Z" fill="#fff"/><path d="M50 50 L81.1 18.9 A44 44 0 0 1 94 50 Z" fill="#e2343e"/>
-          <path d="M50 50 L94 50 A44 44 0 0 1 81.1 81.1 Z" fill="#fff"/><path d="M50 50 L81.1 81.1 A44 44 0 0 1 50 94 Z" fill="#e2343e"/>
-          <path d="M50 50 L50 94 A44 44 0 0 1 18.9 81.1 Z" fill="#fff"/><path d="M50 50 L18.9 81.1 A44 44 0 0 1 6 50 Z" fill="#e2343e"/>
-          <path d="M50 50 L6 50 A44 44 0 0 1 18.9 18.9 Z" fill="#fff"/><path d="M50 50 L18.9 18.9 A44 44 0 0 1 50 6 Z" fill="#e2343e"/>
-        </g>
-        <circle cx="50" cy="50" r="10" fill="#fff" stroke="#1a1a1f" stroke-width="3"/>
-      </svg>
-      <div class="spin-copy">
-        <h2>Spin to win!</h2>
-        <p>Free gift card giveaways.</p>
-        <span class="cta">Play now <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+  <section class="families" aria-label="Products">
+    <div class="family" style="--b:#b3202a;--bh:#e2343e;--bd:#16090b">
+      <div class="fam-head">
+        <img src="assets/img/shield.webp" alt="">
+        <div><span class="kicker">Tenant Property Protection</span><h2>TPP Secure</h2></div>
       </div>
-    </button>
+      <div class="fam-list" data-family="tpp"></div>
+    </div>
+    <div class="family" style="--b:#06814a;--bh:#2ec876;--bd:#07160f">
+      <div class="fam-head">
+        <img src="assets/img/brands/rv.webp" alt="">
+        <div><span class="kicker">RVs &middot; Boats &middot; Trailers</span><h2>RV Park 'N' Protect</h2></div>
+      </div>
+      <div class="fam-list" data-family="rv"></div>
+    </div>
+    <div class="family" style="--b:#3b7bff;--bh:#ff8a1e;--bd:#0b1a3a">
+      <div class="fam-head" style="background:linear-gradient(120deg,#3b7bff 0%,#1f4fc4 55%,#0b1a3a 130%)">
+        <div><img class="wordmark" src="assets/img/partners/safehugg-white.webp" alt="SafeHugg"><span class="kicker" style="margin-top:8px">Health &middot; Wellness &middot; Safety</span></div>
+      </div>
+      <div class="fam-list" data-family="safehugg"></div>
+    </div>
   </section>
+
+  <button class="spin-banner" id="open-wheel">
+    <span class="bulbs"></span>
+    <svg class="spin-icon" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="48" fill="#1a1a1f"/>
+      <g stroke="#1a1a1f" stroke-width="1.5">
+        <path d="M50 50 L50 6 A44 44 0 0 1 81.1 18.9 Z" fill="#fff"/><path d="M50 50 L81.1 18.9 A44 44 0 0 1 94 50 Z" fill="#e2343e"/>
+        <path d="M50 50 L94 50 A44 44 0 0 1 81.1 81.1 Z" fill="#fff"/><path d="M50 50 L81.1 81.1 A44 44 0 0 1 50 94 Z" fill="#e2343e"/>
+        <path d="M50 50 L50 94 A44 44 0 0 1 18.9 81.1 Z" fill="#fff"/><path d="M50 50 L18.9 81.1 A44 44 0 0 1 6 50 Z" fill="#e2343e"/>
+        <path d="M50 50 L6 50 A44 44 0 0 1 18.9 18.9 Z" fill="#fff"/><path d="M50 50 L18.9 18.9 A44 44 0 0 1 50 6 Z" fill="#e2343e"/>
+      </g>
+      <circle cx="50" cy="50" r="10" fill="#fff" stroke="#1a1a1f" stroke-width="3"/>
+    </svg>
+    <div style="text-align:left"><h2>Spin to win!</h2><p>Free gift card giveaways &mdash; tap to play.</p></div>
+    <span class="play">Play now</span>
+  </button>
 
   <footer>
     <div class="contact">
@@ -558,18 +706,30 @@
   </footer>
 </main>
 
-<section class="product" id="product" aria-live="polite">
-  <button class="back" id="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Home</button>
-  <div class="stage">
-    <h2 id="product-title"></h2>
-    <p>Video coming soon.</p>
+<section class="ppage" id="ppage" aria-live="polite">
+  <div class="ptop">
+    <button class="back" id="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Main menu</button>
+    <img class="famlogo" id="pp-famlogo" alt="">
+  </div>
+  <div class="pgrid">
+    <div class="pinfo">
+      <div class="pbrand"><img id="pp-logo" alt=""><div><div class="pkicker" id="pp-kicker"></div><h2 id="pp-title"></h2></div></div>
+      <p class="over" id="pp-over"></p>
+      <p class="desc" id="pp-desc"></p>
+      <div class="points" id="pp-points"></div>
+    </div>
+    <div class="pmedia">
+      <button class="pvcard" id="pp-video"><span class="big-play"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span><span class="vlabel" id="pp-vlabel"></span></button>
+      <div class="topics-h" id="pp-topics-h">Choose a topic</div>
+      <div class="topics" id="pp-topics"></div>
+    </div>
   </div>
 </section>
 
 <section class="player" id="player" aria-label="Product video">
   <video id="pvideo" playsinline preload="auto"></video>
   <div class="topbar">
-    <button class="back" id="player-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Home</button>
+    <button class="back" id="player-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Back</button>
     <div class="ptitle" id="ptitle"></div>
     <!-- kept away from play/pause: a tap meant to pause used to land on restart and jump to 0:00 -->
     <button class="back restart" id="preplay" aria-label="Start over"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/></svg> Start over</button>
@@ -591,7 +751,7 @@
       <div class="end-actions">
         <button class="btn" id="end-replay" style="background:#ececf0;color:var(--ink)">Watch again</button>
         <button class="btn" id="end-spin">Spin to win!</button>
-        <button class="btn" id="end-home" style="background:#ececf0;color:var(--ink)">Home</button>
+        <button class="btn" id="end-home" style="background:#ececf0;color:var(--ink)">Main menu</button>
       </div>
     </div>
   </div>
@@ -660,20 +820,66 @@
 </section>
 
 <script>
-  // video: file in videos/ (plus <name>_chapters.json for the chapter chips and <name>_poster.jpg). No video -> "coming soon".
-  const PRODUCTS = {
-    secure:    { title: "TPP Secure", video: "tpp_secure", img: "assets/img/secure.webp" },
-    rv:        { title: "RV Park 'n' Protect", video: "rv_park", img: "assets/img/rv.webp" },
-    container: { title: "Portable Container Protection", video: "container", img: "assets/img/container.webp" },
-    flex:      { title: "Flex Space", video: "flex_space", img: "assets/img/flex.webp" },
-    claimspros:{ title: "ClaimsPros", video: "claimspros", img: "assets/img/partners/claimspros-photo.webp" },
-    safehugg:  { title: "SafeHugg", video: "safehugg", img: "assets/img/partners/safehugg-photo.webp" },
+  // Home screen = three brand columns (user, 2026-10-19). Each product opens its own branded page with an overview,
+  // a description and a topic menu that jumps into the product video you already made (videos/<video>.mp4 +
+  // <video>_chapters.json). "chapters" limits a page to part of a shared video (SafeHugg Telehealth / Safety).
+  const FAMILIES = {
+    tpp:      { b: "#b3202a", bh: "#e2343e", bd: "#16090b", famlogo: "assets/img/logo.webp" },
+    rv:       { b: "#06814a", bh: "#2ec876", bd: "#07160f", famlogo: "assets/img/brands/rv.webp" },
+    safehugg: { b: "#3b7bff", bh: "#ff8a1e", bd: "#0b1a3a", famlogo: "assets/img/partners/safehugg-white.webp" },
   };
+  const PRODUCTS = {
+    secure: { fam: "tpp", title: "TPP Secure", kicker: "Tenant contents protection", line: "Tenant contents protection",
+      video: "tpp_secure", img: "assets/img/secure.webp", em: "assets/img/brands/secure.webp",
+      over: "Lease-compliant protection for what your tenants store, active the day they move in.",
+      desc: "Most leases require tenants to protect what they store, yet roughly two out of three storage tenants don't have a homeowner's policy at all. TPP Secure closes that gap: a protection plan built for self storage, added right to the rent.",
+      points: ["Replacement cost", "No deductible", "No premium increase", "Lease-compliant"] },
+    container: { fam: "tpp", title: "Portable Container Protection", kicker: "TPP Secure family", line: "In storage · in transit · on site",
+      video: "container", img: "assets/img/container.webp", em: "assets/img/brands/container.webp", pos: "78% 50%",
+      over: "One plan that follows your customers' belongings everywhere the container goes.",
+      desc: "One monthly fee protects the contents through all three phases: in storage at your site, in transit, and on site at your customer's location. Every plan also includes the Container Accidental Damage Waiver, up to $3,500.",
+      points: ["In storage", "In transit", "On site", "Damage waiver included"] },
+    flex: { fam: "tpp", title: "Flex Space Protection", kicker: "TPP Secure family", line: "For the businesses that rent from you",
+      video: "flex_space", img: "assets/img/flex.webp", em: "assets/img/brands/flex.webp",
+      over: "Lease-compliant protection for the tools, inventory and equipment inside your flex spaces.",
+      desc: "Built on the same foundation as TPP Secure and signed right on the addendum. It works from the ceiling down (fire, smoke, burglary, roof leaks and windstorm) and pays replacement cost with no deductible.",
+      points: ["Replacement cost", "No deductible", "Tools & inventory", "Lease-compliant"] },
+    premium: { fam: "tpp", title: "Premium Storage Protection", kicker: "Nine consecutive years best in business", line: "Garage condos · collector suites · RV & boat garages",
+      img: "assets/img/premium.webp", em: "assets/img/brands/premium.webp", logo: "assets/img/brands/premium-logo.webp", logoBig: true, titleInLogo: true,
+      colors: { b: "#a8822f", bh: "#d9b25f", bd: "#0b0a08" },
+      over: "Premium spaces deserve premium protection.",
+      desc: "Whether you store high-value business inventory, a vehicle collection or the contents of your personal retreat, TPP Premium Storage Protection offers elevated, lease-compliant protection for what matters to you, with coverage tiers that scale for higher-value contents and one simple monthly charge billed alongside the rent.",
+      points: ["Elevated limits", "Lease-compliant", "Enrollment at move-in", "Simple monthly plan"] },
+    claimspros: { fam: "tpp", title: "ClaimsPros", kicker: "Storage claims specialists", line: "Storage claims specialists",
+      video: "claimspros", img: "assets/img/partners/claimspros-photo.webp", logo: "assets/img/partners/claimspros-white.webp", logoWide: true, nameLogo: true, pos: "70% 40%",
+      colors: { b: "#3f8f25", bh: "#7ccf4a", bd: "#07130a" },
+      over: "Smarter, quicker claims service, so your managers never have to become claims adjusters.",
+      desc: "TPP's sister company and a third-party administrator delivering white-glove claims administration built for self storage. Your team files the incident report, ClaimsPros handles the rest, and your dashboard shows real-time status for every claim.",
+      points: ["Full-service claims", "Real-time visibility", "Your team freed up"] },
+    rv: { fam: "rv", title: "RV Park 'N' Protect", kicker: "RVs · boats · trailers · vehicles", line: "RVs · boats · trailers · vehicles", tall: true,
+      video: "rv_park", img: "assets/img/rv.webp", em: "assets/img/brands/rv.webp",
+      over: "We pay your deductible, so you don't have to.",
+      desc: "The industry's first protection plan built for RV and boat storage. It works alongside the owner's own coverage, covering deductibles and gaps: fire, burglary damage, vandalism, collisions, dings, dents and scrapes, indoors or out.",
+      points: ["Deductible coverage", "Contents & vehicle parts", "Second vehicle included", "Indoors or out"] },
+    telehealth: { fam: "safehugg", title: "Telehealth", kicker: "Health & wellness", line: "Virtual doctor · prescriptions · counseling", tall: true,
+      video: "safehugg", img: "assets/img/telehealth.webp", logo: "assets/img/partners/safehugg-white.webp", logoWide: true,
+      chapters: ["What It Is", "Virtual Doctor", "Prescriptions", "Mental Wellness"],
+      over: "A licensed U.S. physician, 24/7, by phone or video. No appointment, no co-pays.",
+      desc: "SafeHugg wraps telehealth, mental wellness and personal safety into one simple app: prescriptions and refills handled on the call, more than 5,000 free medications at over 70,000 pharmacies, and virtual counseling day or night.",
+      points: ["24/7 physicians", "5,000+ free medications", "Virtual counseling"] },
+    safety: { fam: "safehugg", title: "Safety", kicker: "Personal safety", line: "Safe 360 · SafeHugg Zones", tall: true,
+      video: "safehugg", img: "assets/img/safety.webp", logo: "assets/img/partners/safehugg-white.webp", logoWide: true,
+      chapters: ["Safe 360", "Built For Real Life", "Places", "SafeHugg Zones", "Hugg Your Manager", "For Operators", "Wrap-up"],
+      over: "Say your safe word or tap the alert, and SafeHugg goes to work instantly.",
+      desc: "Safe 360 alerts your four closest people, streams live video and records straight to the cloud. Make your facility a SafeHugg Zone so tenants are looked after from the moment they arrive, and look after your team with Hugg Your Manager.",
+      points: ["Safe 360 alerts", "SafeHugg Zones", "Hugg Your Manager"] },
+  };
+  const brandOf = P => Object.assign({}, FAMILIES[P.fam], P.colors || {});
   const IDLE_MS = 60 * 1000;   // after 60s without a touch, go back to the looping promo video
 
   // Videos are cached on the kiosk itself (sw.js) so they open instantly and survive flaky booth Wi-Fi.
   // Bump VIDEO_VER whenever any video file changes, so kiosks drop the old copies and fetch the new ones.
-  const VIDEO_VER = "20261014b";
+  const VIDEO_VER = "20261019a";
   const vurl = name => "videos/" + name + ".mp4?v=" + VIDEO_VER;
   document.getElementById("promo").src = vurl("msm-loop");
   if ("serviceWorker" in navigator) {
@@ -716,7 +922,7 @@
       const name = "tpp-videos-" + VIDEO_VER;
       for (const k of await caches.keys()) if (k.startsWith("tpp-videos-") && k !== name) await caches.delete(k);
       const cache = await caches.open(name);
-      const files = ["msm-loop", ...Object.values(PRODUCTS).map(P => P.video).filter(Boolean)];
+      const files = [...new Set(["msm-loop", ...Object.values(PRODUCTS).map(P => P.video).filter(Boolean)])];
       for (const f of files) {                       // one at a time so the promo keeps its bandwidth
         while (!(await cache.match(vurl(f)))) {
           // never compete with someone watching a product video: wait until the player is closed
@@ -735,24 +941,97 @@
     finally { caching = false; cacheCtl = null; }
   }
 
-  const product = document.getElementById("product");
-  const title = document.getElementById("product-title");
+  // ---------------- Home columns + product pages ----------------
+  const ppage = document.getElementById("ppage");
+  const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M9 5l7 7-7 7"/></svg>';
+  const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  const chapterCache = {};
+  const getChapters = async name => chapterCache[name] || (chapterCache[name] = (await (await fetch("videos/" + name + "_chapters.json")).json()).chapters);
+  const pageChapters = async P => {
+    const all = await getChapters(P.video);
+    return P.chapters ? all.filter(c => P.chapters.includes(c.title)) : all;
+  };
 
-  function openProduct(id) {
-    if (PRODUCTS[id].video) return openPlayer(id);
-    title.textContent = PRODUCTS[id].title;
-    product.classList.add("open");
+  function applyBrand(el, P) {
+    const B = brandOf(P);
+    el.style.setProperty("--b", B.b); el.style.setProperty("--bh", B.bh); el.style.setProperty("--bd", B.bd);
+  }
+  // build the three columns from PRODUCTS (order = column order)
+  document.querySelectorAll(".fam-list").forEach(list => {
+    Object.entries(PRODUCTS).filter(([, P]) => P.fam === list.dataset.family).forEach(([id, P]) => {
+      const b = document.createElement("button");
+      b.className = "prod" + (P.tall ? " tall" : "");
+      b.dataset.product = id;
+      b.style.backgroundImage = "url('" + P.img + "')";
+      if (P.pos) b.style.backgroundPosition = P.pos;
+      if (P.colors) applyBrand(b, P);
+      const name = P.nameLogo ? '<img class="logo-nm" src="' + P.logo + '" alt="' + P.title + '">' : "<b>" + P.title + "</b>";
+      b.innerHTML = (P.em ? '<img class="em" src="' + P.em + '" alt="">' : "") +
+        '<span class="nm">' + name + "<small>" + P.line + "</small>" +
+        (P.tall ? '<span class="cta-pill">Learn more ' + PLAY + "</span>" : "") + "</span>" +
+        (P.tall ? "" : '<span class="go">' + CHEV + "</span>");
+      b.addEventListener("click", () => openProduct(id));
+      list.appendChild(b);
+    });
+  });
+
+  let pageId = null;
+  async function openProduct(id) {
+    const P = PRODUCTS[id];
+    pageId = id;
+    applyBrand(ppage, P);
+    const B = brandOf(P);
+    document.getElementById("pp-famlogo").src = FAMILIES[P.fam].famlogo;
+    const logo = document.getElementById("pp-logo");
+    logo.src = P.logo || P.em || ""; logo.hidden = !(P.logo || P.em);
+    logo.className = P.logoBig ? "big" : P.logoWide ? "wide" : "";
+    document.getElementById("pp-kicker").textContent = P.kicker;
+    document.getElementById("pp-title").textContent = P.nameLogo || P.titleInLogo ? "" : P.title;
+    document.getElementById("pp-over").textContent = P.over;
+    document.getElementById("pp-desc").textContent = P.desc;
+    document.getElementById("pp-points").innerHTML = P.points.map(t => "<span>" + t + "</span>").join("");
+    const card = document.getElementById("pp-video"), label = document.getElementById("pp-vlabel");
+    const topics = document.getElementById("pp-topics"), topicsH = document.getElementById("pp-topics-h");
+    topics.innerHTML = "";
+    if (P.video) {
+      card.classList.remove("soon");
+      card.style.backgroundImage = "url('" + (P.chapters ? P.img : "videos/" + P.video + "_poster.jpg") + "')";
+      label.innerHTML = "Watch the video<small>Tap to play, or pick a topic below</small>";
+      topicsH.hidden = false;
+      try {
+        const marks = await pageChapters(P);
+        if (pageId !== id) return;
+        marks.forEach((m, i) => {
+          const t = document.createElement("button");
+          t.className = "topic";
+          t.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="t">' + m.title + '</span><span class="tm">' + fmt(m.start) + "</span>";
+          t.addEventListener("click", () => openPlayer(id, m.start));
+          topics.appendChild(t);
+        });
+      } catch (e) { topicsH.hidden = true; }
+    } else {
+      card.classList.add("soon");
+      card.style.backgroundImage = "url('" + P.img + "')";
+      label.innerHTML = "Video coming soon<small>Ask our team at Booth #527</small>";
+      topicsH.hidden = true;
+    }
+    ppage.classList.add("open");
     history.replaceState(null, "", "#" + id);
   }
+  document.getElementById("pp-video").addEventListener("click", async () => {
+    const P = PRODUCTS[pageId];
+    if (!P || !P.video) return;
+    let start = 0;
+    if (P.chapters) { try { start = (await pageChapters(P))[0].start; } catch (e) {} }
+    openPlayer(pageId, start);
+  });
   function goHome() {
-    product.classList.remove("open");
+    ppage.classList.remove("open");
     closePlayer();
     closeWheel();
+    pageId = null;
     history.replaceState(null, "", location.pathname);
   }
-
-  document.querySelectorAll(".tile, .partner[data-product]").forEach(t =>
-    t.addEventListener("click", () => openProduct(t.dataset.product)));
   document.getElementById("back").addEventListener("click", goHome);
 
   // Attract mode: the promo loops full-screen until someone touches the screen.
@@ -849,7 +1128,7 @@
   function loop() { drawWheel(); raf = requestAnimationFrame(loop); }
 
   function openWheel() {
-    product.classList.remove("open");
+    ppage.classList.remove("open");
     wheelScreen.classList.add("open");
     history.replaceState(null, "", "#wheel");
     resetHold();
@@ -1080,23 +1359,23 @@
   let current = null, marks = [], uiTimer;
   const fmt = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
 
-  async function openPlayer(id) {
+  async function openPlayer(id, startAt) {
     current = id;
     const P = PRODUCTS[id];
+    applyBrand(player, P);
     document.getElementById("ptitle").textContent = P.title;
     endEl.classList.remove("open");
     if (cacheCtl) cacheCtl.abort();                     // give this video the whole connection
     pv.poster = "videos/" + P.video + "_poster.jpg";   // first frame shows instantly, never a black screen
     pv.src = vurl(P.video);
+    if (startAt) pv.addEventListener("loadedmetadata", () => { pv.currentTime = startAt + 0.05; }, { once: true });
     pv.muted = false;
     pv.play().catch(() => { pv.muted = true; pv.play().catch(() => {}); });   // start now; chapters load alongside
     player.classList.add("open");
-    history.replaceState(null, "", "#" + id);
     marks = [];
     chipsEl.innerHTML = "";
     try {
-      const j = await (await fetch("videos/" + P.video + "_chapters.json")).json();
-      marks = j.chapters;
+      marks = await pageChapters(P);
       marks.forEach((m, i) => {
         const b = document.createElement("button");
         b.className = "chip"; b.innerHTML = '<span class="n">' + String(i + 1).padStart(2, "0") + '</span>' + m.title;
@@ -1144,7 +1423,7 @@
   function showEnd() {
     const grid = document.getElementById("next-grid");
     grid.innerHTML = "";
-    Object.entries(PRODUCTS).filter(([id]) => id !== current).forEach(([id, P]) => {
+    Object.entries(PRODUCTS).filter(([id, P]) => id !== current && P.video).forEach(([id, P]) => {
       const b = document.createElement("button");
       b.style.backgroundImage = "url('" + P.img + "')";
       b.innerHTML = "<span>" + P.title + "</span>";
@@ -1165,7 +1444,7 @@
   trackEl.addEventListener("pointermove", e => { if (e.buttons) seekFromPointer(e); });
   pv.addEventListener("click", () => { if (player.classList.contains("idle-ui")) showUI(); else { pv.paused ? pv.play() : pv.pause(); } });
   player.addEventListener("pointermove", showUI);
-  document.getElementById("player-back").addEventListener("click", goHome);
+  document.getElementById("player-back").addEventListener("click", closePlayer);   // back to the product page
   document.getElementById("end-home").addEventListener("click", goHome);
   document.getElementById("end-replay").addEventListener("click", () => { endEl.classList.remove("open"); pv.currentTime = 0; pv.play(); });
   document.getElementById("end-spin").addEventListener("click", () => { closePlayer(); openWheel(); });
