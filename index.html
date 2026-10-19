@@ -475,7 +475,9 @@
 </style>
 <style>
   /* ================= v3 home: three brand columns + Spin to Win (user, 2026-10-19) ================= */
-  .home { grid-template-rows: auto 1fr auto auto; row-gap: clamp(12px, 2vh, 28px); }
+  .home { grid-template-rows: auto 1fr auto auto; grid-template-columns: minmax(0, 1fr); row-gap: clamp(12px, 2vh, 28px); }
+  .home > * { min-width: 0; }
+  .home { overflow-x: clip; }            /* the breathing glow (::before, inset -20%) must not widen the page */
   .families { position: relative; min-height: 0; display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: clamp(14px, 1.8vw, 34px); }
   .family {
     position: relative; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
@@ -637,7 +639,8 @@
     .families { grid-template-columns: 1fr; }
     .ppage { overflow: auto; }
     .ppage .pgrid { grid-template-columns: 1fr; }
-    .spin-banner { flex-wrap: wrap; }
+    .spin-banner { flex-wrap: wrap; text-align: center; }
+    .spin-banner > div { text-align: center !important; }
   }
   @media (max-width: 900px), (max-height: 760px) {
     .family { min-height: 360px; }
