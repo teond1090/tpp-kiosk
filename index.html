@@ -854,7 +854,7 @@
       desc: "Built on the same foundation as TPP Secure and signed right on the addendum. It works from the ceiling down (fire, smoke, burglary, roof leaks and windstorm) and pays replacement cost with no deductible.",
       points: ["Replacement cost", "No deductible", "Tools & inventory", "Lease-compliant"] },
     premium: { fam: "tpp", title: "Premium Storage Protection", kicker: "Nine consecutive years best in business", line: "Garage condos · collector suites · RV & boat garages",
-      img: "assets/img/premium.webp", em: "assets/img/brands/premium.webp", logo: "assets/img/brands/premium-logo.webp", logoBig: true, titleInLogo: true,
+      video: "premium_storage", img: "assets/img/premium.webp", em: "assets/img/brands/premium.webp", logo: "assets/img/brands/premium-logo.webp", logoBig: true, titleInLogo: true,
       colors: { b: "#a8822f", bh: "#d9b25f", bd: "#0b0a08" },
       over: "Premium spaces deserve premium protection.",
       desc: "Whether you store high-value business inventory, a vehicle collection or the contents of your personal retreat, TPP Premium Storage Protection offers elevated, lease-compliant protection for what matters to you, with coverage tiers that scale for higher-value contents and one simple monthly charge billed alongside the rent.",
@@ -888,7 +888,7 @@
 
   // Videos are cached on the kiosk itself (sw.js) so they open instantly and survive flaky booth Wi-Fi.
   // Bump VIDEO_VER whenever any video file changes, so kiosks drop the old copies and fetch the new ones.
-  const VIDEO_VER = "20261019a";
+  const VIDEO_VER = "20261019b";
   const vurl = name => "videos/" + name + ".mp4?v=" + VIDEO_VER;
   document.getElementById("promo").src = vurl("msm-loop");
   if ("serviceWorker" in navigator) {
@@ -910,8 +910,14 @@
       if (!v.getAttribute("src") || Date.now() - last < 3000) return;
       last = Date.now();
       const t = baseOf() === base ? Math.max(good, v.currentTime || 0) : (v.currentTime || 0);
-      v.src = baseOf() + "&r=" + Date.now();   // new URL = fresh media pipeline (sw.js ignores the &r=)
-      v.addEventListener("loadedmetadata", () => { v.currentTime = t; if (shouldPlay()) v.play().catch(() => {}); }, { once: true });
+      const url = baseOf() + "&r=" + Date.now();   // new URL = fresh media pipeline (sw.js ignores the &r=)
+      v.src = url;
+      // Only resume THIS reload: if the viewer opened another video first, a leftover resume used to fire on that
+      // video's metadata and throw it back to this one's old position (topics starting at 0:00).
+      v.addEventListener("loadedmetadata", () => {
+        if (v.getAttribute("src") !== url) return;
+        v.currentTime = t; if (shouldPlay()) v.play().catch(() => {});
+      }, { once: true });
     };
     v.addEventListener("error", recover);
     // stuck buffering for 8 s while it should be playing: same recovery
