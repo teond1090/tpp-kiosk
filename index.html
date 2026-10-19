@@ -631,6 +631,11 @@
   .topic .n { flex: none; width: 2.1em; height: 2.1em; border-radius: 50%; display: grid; place-items: center; background: var(--b); font-family: "Anton", sans-serif; font-size: clamp(13px, 1vw, 19px); }
   .topic .t { flex: 1; font-family: "Anton", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: clamp(15px, 1.15vw, 23px); }
   .topic .tm { color: #aaa; font-variant-numeric: tabular-nums; font-size: clamp(13px, .95vw, 19px); }
+  /* loading spinner over the player while the video opens or jumps to a chapter (taps meanwhile never pause it) */
+  .ploading { position: absolute; inset: 0; display: none; place-items: center; pointer-events: none; background: rgba(0,0,0,.25); }
+  .player.loading .ploading { display: grid; }
+  .ploading span { width: clamp(64px, 6vw, 110px); aspect-ratio: 1; border-radius: 50%;
+    border: 8px solid rgba(255,255,255,.2); border-top-color: var(--bh, var(--red-hi)); animation: turn .8s linear infinite; }
   /* the player takes the product's brand colour */
   .player .back, .player .chip.active { background: var(--b, var(--red)); border-color: var(--b, var(--red)); }
   .player .track .fill { background: var(--bh, var(--red-hi)); }
@@ -746,6 +751,7 @@
       <button class="ibtn" id="pmute" aria-label="Sound on or off"></button>
     </div>
   </div>
+  <div class="ploading" id="ploading"><span></span></div>
   <div class="endscreen" id="endscreen">
     <div>
       <h3>Want to see more?</h3>
@@ -1371,7 +1377,11 @@
     if (cacheCtl) cacheCtl.abort();                     // give this video the whole connection
     pv.poster = "videos/" + P.video + "_poster.jpg";   // first frame shows instantly, never a black screen
     pv.src = vurl(P.video);
-    if (startAt) pv.addEventListener("loadedmetadata", () => { pv.currentTime = startAt + 0.05; }, { once: true });
+    if (startAt) {
+      pv.currentTime = startAt + 0.05;   // before metadata = the start position, so the first bytes fetched are the chapter's
+      pv.addEventListener("loadedmetadata", () => { if (pv.currentTime < startAt) pv.currentTime = startAt + 0.05; }, { once: true });
+    }
+    busy();
     pv.muted = false;
     pv.play().catch(() => { pv.muted = true; pv.play().catch(() => {}); });   // start now; chapters load alongside
     player.classList.add("open");
@@ -1382,7 +1392,7 @@
       marks.forEach((m, i) => {
         const b = document.createElement("button");
         b.className = "chip"; b.innerHTML = '<span class="n">' + String(i + 1).padStart(2, "0") + '</span>' + m.title;
-        b.addEventListener("click", e => { e.stopPropagation(); pv.currentTime = m.start + 0.05; pv.play(); });
+        b.addEventListener("click", e => { e.stopPropagation(); busy(); pv.currentTime = m.start + 0.05; pv.play().catch(() => {}); showUI(); });
         chipsEl.appendChild(b);
       });
       placeTicks(); syncUI();   // metadata may already be in (video starts before the chapters arrive)
@@ -1392,7 +1402,7 @@
   function closePlayer() {
     if (!player.classList.contains("open")) return;
     pv.pause(); pv.removeAttribute("src"); pv.load();
-    player.classList.remove("open"); endEl.classList.remove("open");
+    player.classList.remove("open", "loading"); endEl.classList.remove("open");
     current = null;
   }
   function placeTicks() {
@@ -1416,7 +1426,7 @@
   function showUI() {
     player.classList.remove("idle-ui");
     clearTimeout(uiTimer);
-    uiTimer = setTimeout(() => { if (!pv.paused) player.classList.add("idle-ui"); }, 4000);
+    uiTimer = setTimeout(() => { if (!pv.paused && !player.classList.contains("loading")) player.classList.add("idle-ui"); }, 6000);
   }
   function seekFromPointer(e) {
     const r = trackEl.getBoundingClientRect();
@@ -1440,12 +1450,24 @@
   pv.addEventListener("play", syncUI);
   pv.addEventListener("pause", () => { syncUI(); showUI(); });
   pv.addEventListener("ended", () => { showEnd(); resetIdle(); });
-  playBtn.addEventListener("click", e => { e.stopPropagation(); pv.paused ? pv.play() : pv.pause(); });
+  playBtn.addEventListener("click", e => { e.stopPropagation(); if (pv.paused) { busy(); pv.play().catch(() => {}); } else pv.pause(); });
   document.getElementById("preplay").addEventListener("click", e => { e.stopPropagation(); pv.currentTime = 0; pv.play(); });
   muteBtn.addEventListener("click", e => { e.stopPropagation(); pv.muted = !pv.muted; syncUI(); });
   trackEl.addEventListener("pointerdown", e => { e.stopPropagation(); trackEl.setPointerCapture(e.pointerId); seekFromPointer(e); });
   trackEl.addEventListener("pointermove", e => { if (e.buttons) seekFromPointer(e); });
-  pv.addEventListener("click", () => { if (player.classList.contains("idle-ui")) showUI(); else { pv.paused ? pv.play() : pv.pause(); } });
+  // A tap on the picture: first tap just shows the controls; while the video is opening/jumping (or just after a
+  // play/chapter tap) taps never pause it -- people tapping a slow-to-start video used to toggle it on and off.
+  pv.addEventListener("click", () => {
+    if (player.classList.contains("idle-ui")) return showUI();
+    if (player.classList.contains("loading") || performance.now() < busyUntil) { if (pv.paused) pv.play().catch(() => {}); return showUI(); }
+    pv.paused ? pv.play() : pv.pause();
+  });
+  let busyUntil = 0;
+  function busy() { busyUntil = performance.now() + 2500; player.classList.add("loading"); }
+  const ready = () => { if (!pv.paused && pv.readyState >= 3) player.classList.remove("loading"); };
+  ["playing", "canplay", "seeked", "timeupdate"].forEach(ev => pv.addEventListener(ev, ready));
+  ["waiting", "seeking"].forEach(ev => pv.addEventListener(ev, () => { if (!pv.paused) player.classList.add("loading"); }));
+  pv.addEventListener("pause", () => player.classList.remove("loading"));
   player.addEventListener("pointermove", showUI);
   document.getElementById("player-back").addEventListener("click", closePlayer);   // back to the product page
   document.getElementById("end-home").addEventListener("click", goHome);
