@@ -251,6 +251,18 @@
   .hold-btn.holding { transform: scale(.96); box-shadow: 0 0 0 14px rgba(255,255,255,.18), 0 0 60px rgba(226,52,62,.9); }
   .hold-btn:disabled { opacity: .45; cursor: default; }
   .power { margin-top: 14px; color: #d6d6dc; font-size: clamp(14px, 1.2vw, 24px); min-height: 1.4em; }
+  .today { margin-top: clamp(10px, 2vh, 24px); display: inline-block; padding: 8px 20px; border-radius: 999px;
+    background: rgba(255,209,102,.12); box-shadow: inset 0 0 0 2px rgba(255,209,102,.5); color: #ffd166;
+    font-family: "Anton", sans-serif; letter-spacing: .06em; text-transform: uppercase; font-size: clamp(15px, 1.3vw, 26px); }
+  .today:empty { display: none; }
+  .pointer { transition: transform .06s ease-out; transform-origin: 50% 10%; }
+  .pointer.flap { transform: translateX(-50%) rotate(-14deg); transition: none; }
+  .result .card .code { margin: 14px auto 6px; display: inline-block; font-family: "Anton", sans-serif; letter-spacing: .12em;
+    font-size: clamp(40px, 4.4vw, 90px); color: var(--ink); background: #fff6dc; border: 4px dashed #d4a72c; border-radius: 18px; padding: 6px 30px; }
+  .result.jackpot .card { box-shadow: 0 0 0 8px #ffd166, 0 0 80px rgba(255,209,102,.9), 0 30px 80px rgba(0,0,0,.6); }
+  .result.jackpot .card .small { color: #c8961a; font-size: clamp(26px, 2.4vw, 46px); }
+  .flashbang { position: fixed; inset: 0; z-index: 13; pointer-events: none; background: radial-gradient(circle, rgba(255,240,190,.95), rgba(255,209,102,.4) 50%, transparent 75%); animation: flashbang .9s ease-out forwards; }
+  @keyframes flashbang { from { opacity: 1; } to { opacity: 0; } }
   .result {
     position: fixed; inset: 0; z-index: 14; display: none; place-items: center;
     background: rgba(0,0,0,.6);
@@ -778,6 +790,7 @@
     <p class="how">Press and hold the button to power up.<br>Let go to spin!</p>
     <button class="hold-btn" id="hold-btn"><span class="fill" id="hold-fill"></span><span class="lbl" id="hold-lbl">Hold<br>to spin</span></button>
     <div class="power" id="power"></div>
+    <div class="today" id="today"></div>
   </div>
 </section>
 
@@ -798,6 +811,19 @@
         </div>
       </form>
     </div>
+    <div id="handout-step" hidden>
+      <div class="small">Congratulations &mdash; you won</div>
+      <h3 id="handout-name"></h3>
+      <p>No email needed! Show this screen to our team at <b>Booth #527</b> to pick up your prize.</p>
+      <div class="code" id="handout-code"></div>
+      <div class="actions"><button type="button" class="btn" id="handout-done">Done</button></div>
+    </div>
+    <div id="retry-step" hidden>
+      <div class="small">Ohhh, so close!</div>
+      <h3>Try again</h3>
+      <p id="retry-msg">You get one free re-spin. Good luck!</p>
+      <div class="actions"><button type="button" class="btn" id="retry-go">Spin again!</button></div>
+    </div>
     <div id="sent-step" class="sent" hidden>
       <div class="small">You're all set!</div>
       <div class="big">Check your inbox</div>
@@ -811,6 +837,8 @@
 <section class="staff" id="staff" aria-label="Staff tools">
   <b>Prize entries on this kiosk</b>
   <div id="staff-stats"></div>
+  <label style="display:block;margin-top:10px">Gift card limit on this kiosk:
+    <input id="staff-limit" type="number" min="0" step="1" style="width:90px;font-size:18px;padding:4px 8px"> <button class="btn" id="staff-limit-save">Save</button></label>
   <button class="btn" id="staff-csv">Download CSV</button>
   <button class="btn" id="staff-retry">Retry sending</button>
   <button class="btn" id="staff-close">Close</button>
@@ -1086,17 +1114,36 @@
   addEventListener("gesturestart", e => e.preventDefault());
 
   // ---------------- Prize wheel: press & hold to power up, release to spin ----------------
-  // Edit prizes here. "weight" sets how often a prize comes up (higher = more likely).
-  const PRIZES = [
-    { label: "Visa Gift Card",         color: "#b3202a", text: "#fff",    weight: 1 },
-    { label: "Domino's Gift Card",     color: "#ffffff", text: "#1a1a1f", weight: 1 },
-    { label: "Starbucks Gift Card",    color: "#1a1a1f", text: "#fff",    weight: 1 },
-    { label: "Chick-fil-A Gift Card",  color: "#ffffff", text: "#1a1a1f", weight: 1 },
-    { label: "Chipotle Gift Card",     color: "#b3202a", text: "#fff",    weight: 1 },
-    { label: "Olive Garden Gift Card", color: "#ffffff", text: "#1a1a1f", weight: 1 },
-    { label: "Panera Gift Card",       color: "#1a1a1f", text: "#fff",    weight: 1 },
-    { label: "Subway Gift Card",       color: "#ffffff", text: "#1a1a1f", weight: 1 },
-  ];
+  // Edit prizes here (user, 2026-10-20). Wheel order = slice order. Gift cards share 20% (the best prize, limited
+  // stock); booth handouts + Try Again share the other 80%.
+  //   kind "gift"    -> email form, e-gift card (counts toward the kiosk's gift card limit, set in the #staff panel)
+  //   kind "handout" -> no email: show this screen at the booth (with a claim code)
+  //   kind "retry"   -> one free re-spin per visitor (the re-spin can't land on Try Again)
+  // Chance per prize TYPE (%); each type's chance is split evenly over its slices, so adding slices never changes the odds.
+  const ODDS = { gift: 20, pen: 26, koozie: 22, wine: 10, retry: 22 };   // pens & koozies: most stock; try again > gift cards (user)
+  const GIFT = (label, top, color, text) => ({ label, top, sub: "GIFT CARD", kind: "gift", type: "gift", color, text });
+  const PEN = { label: "TPP Pen", top: "TPP PEN", sub: "BOOTH PRIZE", kind: "handout", type: "pen", color: "#f2b632", text: "#1a1a1f" };
+  const KOOZIE = { label: "TPP Koozie", top: "KOOZIE", sub: "TPP", kind: "handout", type: "koozie", color: "#f2b632", text: "#1a1a1f" };
+  const WINE = { label: "Wine Opener", top: "WINE", sub: "OPENER", kind: "handout", type: "wine", color: "#f2b632", text: "#1a1a1f" };
+  const RETRY = { label: "Try Again", top: "TRY", sub: "AGAIN", kind: "retry", type: "retry", color: "#8a8f9c", text: "#ffffff" };
+  const PRIZES = [   // 24 slices: a gift card every 3rd slice; pens & koozies x5 (most stock), wine opener & try again x3
+    GIFT("Visa Gift Card", "VISA", "#b3202a", "#fff"), PEN, KOOZIE,
+    GIFT("Domino's Gift Card", "DOMINO'S", "#ffffff", "#1a1a1f"), WINE, PEN,
+    GIFT("Starbucks Gift Card", "STARBUCKS", "#b3202a", "#fff"), KOOZIE, RETRY,
+    GIFT("Chick-fil-A Gift Card", "CHICK-FIL-A", "#ffffff", "#1a1a1f"), PEN, KOOZIE,
+    GIFT("Chipotle Gift Card", "CHIPOTLE", "#b3202a", "#fff"), WINE, PEN,
+    GIFT("Olive Garden Gift Card", "OLIVE GARDEN", "#ffffff", "#1a1a1f"), KOOZIE, RETRY,
+    GIFT("Panera Gift Card", "PANERA", "#b3202a", "#fff"), PEN, KOOZIE,
+    GIFT("Subway Gift Card", "SUBWAY", "#ffffff", "#1a1a1f"), WINE, RETRY,
+  ].map(p => Object.assign({}, p));
+  PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
+  const GIFT_LIMIT_KEY = "tpp-gift-limit", GIFT_WINS_KEY = "tpp-gift-wins", HANDOUT_KEY = "tpp-handouts";
+  const DEFAULT_GIFT_LIMIT = 25;
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const giftsLeft = () => Math.max(0, lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) - lsGet(GIFT_WINS_KEY, 0));
+  const todayKey = () => "tpp-wins-" + new Date().toISOString().slice(0, 10);
+
   const wheelScreen = document.getElementById("wheel-screen");
   const wheelCanvas = document.getElementById("wheel");
   const wctx = wheelCanvas.getContext("2d");
@@ -1105,11 +1152,38 @@
   const holdLbl = document.getElementById("hold-lbl");
   const powerTxt = document.getElementById("power");
   const result = document.getElementById("result");
+  const pointerEl = document.querySelector(".pointer");
   const SEG = (Math.PI * 2) / PRIZES.length;
   let angle = 0, spinning = false, holding = false, holdStart = 0, power = 0, raf = 0;
+  let glow = -1, glowUntil = 0, retryUsed = false;
+
+  // ---- sound (Web Audio, no files): peg ticks, power hum, fanfare / chime / womp
+  let AC = null;
+  const audio = () => { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); } catch (e) {} return AC; };
+  function tone(freq, t0, dur, type = "triangle", vol = 0.18, slideTo = null) {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
+  const tick = () => tone(2200, 0, 0.035, "square", 0.06);
+  const fanfare = () => [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.11, i === 6 ? 0.7 : 0.16, "triangle", 0.2));
+  const chime = () => [784, 988, 1319].forEach((f, i) => tone(f, i * 0.12, 0.35, "sine", 0.22));
+  const womp = () => { tone(330, 0, 0.35, "sawtooth", 0.12, 260); tone(250, 0.42, 0.6, "sawtooth", 0.12, 150); };
+  let hum = null;
+  function humStart() {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = "sawtooth"; o.frequency.value = 90; g.gain.value = 0.035;
+    o.connect(g).connect(a.destination); o.start(); hum = { o, g };
+  }
+  function humStop() { if (hum) { try { hum.g.gain.setTargetAtTime(0.0001, AC.currentTime, 0.05); hum.o.stop(AC.currentTime + 0.3); } catch (e) {} hum = null; } }
+  function flap() { pointerEl.classList.add("flap"); setTimeout(() => pointerEl.classList.remove("flap"), 70); }
 
   function drawWheel() {
-    const c = wctx, R = wheelCanvas.width / 2;
+    const c = wctx, R = wheelCanvas.width / 2, now = performance.now();
     c.clearRect(0, 0, R * 2, R * 2);
     c.save(); c.translate(R, R); c.rotate(angle);
     PRIZES.forEach((p, i) => {
@@ -1117,6 +1191,9 @@
       const a0 = -Math.PI / 2 + i * SEG - SEG / 2;
       c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, R * 0.94, a0, a0 + SEG); c.closePath();
       c.fillStyle = p.color; c.fill();
+      if (i === glow && now < glowUntil) {   // winning slice pulses before the result card
+        c.fillStyle = "rgba(255,233,168," + (0.35 + 0.35 * Math.sin(now / 70)) + ")"; c.fill();
+      }
       c.lineWidth = 6; c.strokeStyle = "#1a1a1f"; c.stroke();
       const mid = a0 + SEG / 2;
       // keep labels upright: slices currently on the left half are drawn flipped
@@ -1124,45 +1201,56 @@
       c.save(); c.rotate(mid);
       if (flip) c.rotate(Math.PI);
       c.fillStyle = p.text; c.textAlign = flip ? "left" : "right"; c.textBaseline = "middle";
-      const x = flip ? -R * 0.86 : R * 0.86;
-      c.font = Math.round(R * 0.085) + "px Anton, Impact, sans-serif";
-      c.fillText(p.label.replace(" Gift Card", "").toUpperCase(), x, -R * 0.02);
-      c.font = Math.round(R * 0.05) + "px Oswald, sans-serif";
-      c.fillText("GIFT CARD", x, R * 0.07);
+      const x = flip ? -R * 0.88 : R * 0.88;
+      const k = Math.min(1, 20 / PRIZES.length);                        // narrower slices -> smaller labels
+      let fs = Math.round(R * 0.078 * k);
+      c.font = fs + "px Anton, Impact, sans-serif";
+      while (c.measureText(p.top).width > R * 0.6 && fs > 20) { fs -= 2; c.font = fs + "px Anton, Impact, sans-serif"; }
+      c.fillText(p.top, x, -R * 0.022 * k);
+      c.font = Math.round(R * 0.042 * k) + "px Oswald, sans-serif";
+      c.fillText(p.sub, x, R * 0.058 * k);
       c.restore();
     });
     c.restore();
-    // outer rim with chasing lights
+    // outer rim with chasing lights (they race while the wheel spins, all gold on a win)
     c.beginPath(); c.arc(R, R, R * 0.97, 0, Math.PI * 2); c.lineWidth = R * 0.06; c.strokeStyle = "#1a1a1f"; c.stroke();
+    const period = spinning ? 70 : holding ? 120 : 250, win = now < glowUntil;
     for (let i = 0; i < 24; i++) {
-      const t = i / 24 * Math.PI * 2, on = Math.floor(performance.now() / 250 + i) % 2 === 0;
+      const t = i / 24 * Math.PI * 2, on = win ? Math.floor(now / 120) % 2 === 0 : Math.floor(now / period + i) % 2 === 0;
       c.beginPath(); c.arc(R + Math.cos(t) * R * 0.97, R + Math.sin(t) * R * 0.97, R * 0.018, 0, Math.PI * 2);
-      c.fillStyle = on ? "#ffe9a8" : "#e2343e"; c.fill();
+      c.fillStyle = on ? "#ffe9a8" : (win ? "#ffd166" : "#e2343e"); c.fill();
     }
   }
   function loop() { drawWheel(); raf = requestAnimationFrame(loop); }
 
+  function renderToday() {
+    const n = lsGet(todayKey(), 0);
+    document.getElementById("today").textContent = n ? n + (n === 1 ? " prize" : " prizes") + " won today" : "";
+  }
   function openWheel() {
     ppage.classList.remove("open");
     wheelScreen.classList.add("open");
     history.replaceState(null, "", "#wheel");
-    resetHold();
+    retryUsed = false;
+    resetHold(); renderToday();
     cancelAnimationFrame(raf); loop();
   }
   function closeWheel() {
     wheelScreen.classList.remove("open"); result.classList.remove("open");
-    cancelAnimationFrame(raf);
+    cancelAnimationFrame(raf); humStop();
   }
   function resetHold() {
     holding = false; power = 0; holdFill.style.height = "0%";
-    holdBtn.classList.remove("holding"); holdLbl.innerHTML = "Hold<br>to spin"; powerTxt.textContent = "";
+    holdBtn.classList.remove("holding"); holdLbl.innerHTML = retryUsed ? "Hold to<br>spin again" : "Hold<br>to spin"; powerTxt.textContent = "";
     holdBtn.disabled = spinning;
   }
   function pickPrize() {
-    const total = PRIZES.reduce((sum, p) => sum + p.weight, 0);
+    // gift cards drop out once the kiosk's limit is reached; the free re-spin can't land on Try Again
+    const w = PRIZES.map(p => (p.kind === "gift" && giftsLeft() <= 0) || (p.kind === "retry" && retryUsed) ? 0 : p.weight);
+    const total = w.reduce((sum, x) => sum + x, 0);
     let r = Math.random() * total;
-    for (let i = 0; i < PRIZES.length; i++) { r -= PRIZES[i].weight; if (r <= 0) return i; }
-    return PRIZES.length - 1;
+    for (let i = 0; i < PRIZES.length; i++) { r -= w[i]; if (r <= 0 && w[i] > 0) return i; }
+    return PRIZES.findIndex((p, i) => w[i] > 0);
   }
   function startHold(e) {
     if (spinning || holding) return;
@@ -1170,11 +1258,13 @@
     if (e.pointerId !== undefined && holdBtn.setPointerCapture) holdBtn.setPointerCapture(e.pointerId);
     holding = true; holdStart = performance.now();
     holdBtn.classList.add("holding"); holdLbl.textContent = "Let go!";
+    humStart();
     const charge = () => {
       if (!holding) return;
       power = Math.min(1, (performance.now() - holdStart) / 2500);   // full power after 2.5s
       holdFill.style.height = (power * 100) + "%";
       powerTxt.textContent = "Power " + Math.round(power * 100) + "%";
+      if (hum) hum.o.frequency.value = 90 + power * 260;               // the hum rises as it charges
       angle += 0.02 + power * 0.06;                                    // wheel creeps forward while charging
       requestAnimationFrame(charge);
     };
@@ -1182,7 +1272,7 @@
   }
   function release() {
     if (!holding || spinning) return;
-    holding = false; spinning = true; holdBtn.disabled = true;
+    holding = false; spinning = true; holdBtn.disabled = true; humStop();
     holdBtn.classList.remove("holding"); holdLbl.textContent = "Spinning...";
     const win = pickPrize();
     const TAU = Math.PI * 2, mod = x => ((x % TAU) + TAU) % TAU;
@@ -1190,42 +1280,77 @@
     const jitter = (Math.random() - 0.5) * SEG * 0.7;                  // land inside the slice, not dead centre
     const start = angle;
     const end = start + turns * TAU + mod((-win * SEG + jitter) - start);
-    const dur = 4200 + power * 2200, t0 = performance.now();
-    const ease = x => 1 - Math.pow(1 - x, 4);
+    const dur = 5200 + power * 2400, t0 = performance.now();
+    const ease = x => 1 - Math.pow(1 - x, 5);                          // long, suspenseful crawl over the last slices
+    let lastPeg = Math.floor((angle + SEG / 2) / SEG);
     const step = now => {
       const x = Math.min(1, (now - t0) / dur);
       angle = start + (end - start) * ease(x);
+      const peg = Math.floor((angle + SEG / 2) / SEG);
+      if (peg !== lastPeg) { lastPeg = peg; tick(); flap(); }
       if (x < 1) requestAnimationFrame(step);
-      else { spinning = false; showPrize(win); }
+      else {
+        glow = win; glowUntil = performance.now() + 1100;               // the winning slice pulses first
+        setTimeout(() => { spinning = false; showPrize(win); }, 1000);
+      }
     };
     requestAnimationFrame(step);
   }
+  function hideSteps() { ["claim-step", "handout-step", "retry-step", "sent-step"].forEach(id => document.getElementById(id).hidden = true); }
   function showPrize(i) {
-    wonPrize = PRIZES[i].label;
-    document.getElementById("prize-name").textContent = wonPrize;
-    claimReset();
-    result.classList.add("open");
-    confetti();
+    const P = PRIZES[i];
+    wonPrize = P.label;
+    hideSteps();
+    result.classList.remove("jackpot");
+    if (P.kind === "retry") {
+      retryUsed = true;
+      document.getElementById("retry-step").hidden = false;
+      result.classList.add("open"); womp();
+      return;
+    }
+    lsSet(todayKey(), lsGet(todayKey(), 0) + 1); renderToday();
+    if (P.kind === "gift") {
+      lsSet(GIFT_WINS_KEY, lsGet(GIFT_WINS_KEY, 0) + 1);
+      document.getElementById("prize-name").textContent = wonPrize;
+      claimReset();
+      document.getElementById("claim-step").hidden = false;
+      document.querySelector("#claim-step .small").textContent = "JACKPOT! You won";
+      result.classList.add("open", "jackpot");
+      const fb = document.createElement("div"); fb.className = "flashbang"; document.body.appendChild(fb); setTimeout(() => fb.remove(), 1000);
+      fanfare(); confetti(360, ["#ffd166", "#ffe9a8", "#ffffff", "#e2343e", "#c8961a"]);
+    } else {
+      const code = P.top.replace(/[^A-Z]/g, "").slice(0, 1) + "-" + String(Math.floor(1000 + Math.random() * 9000));
+      const list = lsGet(HANDOUT_KEY, []); list.push({ prize: wonPrize, code, time: new Date().toISOString(), kiosk: KIOSK_NAME }); lsSet(HANDOUT_KEY, list);
+      document.getElementById("handout-name").textContent = wonPrize;
+      document.getElementById("handout-code").textContent = code;
+      document.getElementById("handout-step").hidden = false;
+      result.classList.add("open");
+      chime(); confetti(180);
+    }
+    retryUsed = false;
+    renderStaff();
   }
-  function confetti() {
+  function confetti(count = 180, cols = ["#e2343e", "#ffffff", "#ffd166", "#b3202a", "#2f7df6"]) {
     const cv = document.getElementById("confetti"), c = cv.getContext("2d");
     cv.width = innerWidth; cv.height = innerHeight;
-    const cols = ["#e2343e", "#ffffff", "#ffd166", "#b3202a", "#2f7df6"];
-    const bits = Array.from({ length: 180 }, () => ({
-      x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.5,
-      vx: (Math.random() - 0.5) * 4, vy: 3 + Math.random() * 5, r: 6 + Math.random() * 8,
-      a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3, col: cols[Math.floor(Math.random() * cols.length)],
-    }));
+    const bits = Array.from({ length: count }, (_, k) => {
+      const cannon = count > 200 && k % 2;                             // jackpot: half the confetti bursts up from the bottom corners
+      return cannon
+        ? { x: k % 4 === 1 ? 0 : cv.width, y: cv.height, vx: (k % 4 === 1 ? 1 : -1) * (6 + Math.random() * 8), vy: -(14 + Math.random() * 10), g: 0.35,
+            r: 6 + Math.random() * 8, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3, col: cols[k % cols.length] }
+        : { x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.5, vx: (Math.random() - 0.5) * 4, vy: 3 + Math.random() * 5, g: 0,
+            r: 6 + Math.random() * 8, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3, col: cols[Math.floor(Math.random() * cols.length)] };
+    });
     const t0 = performance.now();
-    const tick = now => {
+    const tickC = now => {
       c.clearRect(0, 0, cv.width, cv.height);
       bits.forEach(b => {
-        b.x += b.vx; b.y += b.vy; b.a += b.va;
+        b.vy += b.g; b.x += b.vx; b.y += b.vy; b.a += b.va;
         c.save(); c.translate(b.x, b.y); c.rotate(b.a); c.fillStyle = b.col; c.fillRect(-b.r / 2, -b.r / 4, b.r, b.r / 2); c.restore();
       });
-      if (now - t0 < 4000) requestAnimationFrame(tick); else c.clearRect(0, 0, cv.width, cv.height);
+      if (now - t0 < 4500) requestAnimationFrame(tickC); else c.clearRect(0, 0, cv.width, cv.height);
     };
-    requestAnimationFrame(tick);
+    requestAnimationFrame(tickC);
   }
   document.getElementById("open-wheel").addEventListener("click", openWheel);
   document.getElementById("wheel-back").addEventListener("click", goHome);
@@ -1283,7 +1408,7 @@
     document.getElementById("claim-send").disabled = false;
     claimStep.hidden = false; sentStep.hidden = true;
   }
-  function closeResult() { result.classList.remove("open"); resetHold(); }
+  function closeResult() { result.classList.remove("open", "jackpot"); resetHold(); }
 
   document.getElementById("claim-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -1310,6 +1435,8 @@
   });
   document.getElementById("result-done").addEventListener("click", closeResult);
   document.getElementById("sent-done").addEventListener("click", closeResult);
+  document.getElementById("handout-done").addEventListener("click", closeResult);
+  document.getElementById("retry-go").addEventListener("click", closeResult);   // retryUsed stays set: the hold button now says "spin again"
 
   // On-screen keyboard (kiosk touch screens often have no system keyboard)
   const KB = [
@@ -1342,18 +1469,28 @@
   function renderStaff() {
     if (!staffEl.classList.contains("open")) return;
     const list = loadEntries(), pending = list.filter(x => !x.sent).length;
-    document.getElementById("staff-stats").textContent =
-      list.length + " entries, " + pending + " waiting to send" + (PRIZE_ENDPOINT ? "" : " (no endpoint set)");
+    const hand = lsGet(HANDOUT_KEY, []), by = {};
+    hand.forEach(h => { by[h.prize] = (by[h.prize] || 0) + 1; });
+    document.getElementById("staff-stats").innerHTML =
+      list.length + " gift card emails, " + pending + " waiting to send" + (PRIZE_ENDPOINT ? "" : " (no endpoint set)") +
+      "<br>Gift cards won: " + lsGet(GIFT_WINS_KEY, 0) + " of " + lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) + " (" + giftsLeft() + " left)" +
+      "<br>Handouts: " + (Object.entries(by).map(([k, v]) => k + " " + v).join(", ") || "none yet");
+    document.getElementById("staff-limit").value = lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT);
   }
   document.getElementById("staff-csv").addEventListener("click", () => {
     const rows = [["time", "email", "prize", "marketing_opt_in", "kiosk", "sent"]]
-      .concat(loadEntries().map(x => [x.time, x.email, x.prize, x.marketing_opt_in, x.kiosk, x.sent || ""]));
+      .concat(loadEntries().map(x => [x.time, x.email, x.prize, x.marketing_opt_in, x.kiosk, x.sent || ""]))
+      .concat(lsGet(HANDOUT_KEY, []).map(h => [h.time, "(booth handout " + h.code + ")", h.prize, "", h.kiosk, ""]));
     const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     a.download = "tpp-prize-entries.csv"; a.click();
   });
   document.getElementById("staff-retry").addEventListener("click", flushEntries);
+  document.getElementById("staff-limit-save").addEventListener("click", () => {
+    const v = Math.max(0, parseInt(document.getElementById("staff-limit").value, 10) || 0);
+    lsSet(GIFT_LIMIT_KEY, v); renderStaff();
+  });
   document.getElementById("staff-close").addEventListener("click", () => { staffEl.classList.remove("open"); history.replaceState(null, "", location.pathname + location.search); });
   if (location.hash === "#staff") { staffEl.classList.add("open"); renderStaff(); }
 
