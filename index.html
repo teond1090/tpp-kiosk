@@ -290,6 +290,8 @@
   .gbox.mine .reveal { box-shadow: 0 0 0 5px #fff, 0 0 40px 8px rgba(255,209,102,.95); }
   .gbox.other { opacity: .5; filter: grayscale(.4); transform: scale(.9); transition: all .5s ease; }
   .gbox:disabled { cursor: default; }
+  .gbox, .result .btn, .kb button, .hold-btn, #wheel-back { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .hold-btn { touch-action: none; }
   #wheel { width: 100%; height: 100%; display: block; }
   .pointer { position: absolute; left: 50%; top: -3%; width: 9%; transform: translateX(-50%); z-index: 1; }
   .pointer svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
@@ -1203,8 +1205,9 @@
   //   kind "handout" -> no email: show this screen at the booth (with a claim code)
   //   kind "retry"   -> one free re-spin per visitor (the re-spin can't land on Try Again)
   // Chance per prize TYPE (%); each type's chance is split evenly over its slices, so adding slices never changes the odds.
-  const ODDS = { gift: 20, pen: 26, koozie: 22, wine: 10, retry: 22 };   // pens & koozies: most stock; try again > gift cards (user)
-  const GIFT = (label, top, color, text) => ({ label, top, sub: "GIFT CARD", kind: "gift", type: "gift", color, text });
+  const ODDS = { gift: 50, pen: 16, koozie: 14, wine: 6, retry: 14 };   // user 2026-10-20: gift cards 50% "for now" (was 20/26/22/10/22)
+  // gift slices don't name a brand (user, 2026-10-20): the brand is chosen in the mystery-box pick that follows
+  const GIFT = (label, top, color, text) => ({ label, top: "GIFT CARD", sub: "MYSTERY BOX", kind: "gift", type: "gift", color, text });
   const PEN = { label: "TPP Pen", top: "TPP PEN", sub: "BOOTH PRIZE", kind: "handout", type: "pen", color: "#f2b632", text: "#1a1a1f" };   // gold
   const KOOZIE = { label: "TPP Koozie", top: "KOOZIE", sub: "TPP", kind: "handout", type: "koozie", color: "#2a7de1", text: "#ffffff" };   // blue
   const WINE = { label: "Wine Opener", top: "WINE", sub: "OPENER", kind: "handout", type: "wine", color: "#8e44ad", text: "#ffffff" };   // purple
@@ -1378,7 +1381,8 @@
   function startHold(e) {
     if (spinning || holding) return;
     e.preventDefault();
-    if (e.pointerId !== undefined && holdBtn.setPointerCapture) holdBtn.setPointerCapture(e.pointerId);
+    // capture keeps a finger that slides off the button holding; never let a capture error block the spin
+    try { if (e.pointerId !== undefined && holdBtn.setPointerCapture) holdBtn.setPointerCapture(e.pointerId); } catch (err) {}
     holding = true; holdStart = performance.now();
     holdBtn.classList.add("holding"); holdLbl.textContent = "Let go!";
     humStart();
