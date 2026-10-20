@@ -1,7 +1,7 @@
 {
  "id": "premium_storage",
  "title": "PREMIUM STORAGE PROTECTION",
- "duration": 143.5,
+ "duration": 132.03,
  "chapters": [
   {
    "title": "Intro",
@@ -28,16 +28,12 @@
    "start": 89.27
   },
   {
-   "title": "Claims",
+   "title": "For Operators",
    "start": 107.38
   },
   {
-   "title": "For Operators",
-   "start": 118.85
-  },
-  {
    "title": "Wrap-up",
-   "start": 133.74
+   "start": 122.27
   }
  ]
 }
