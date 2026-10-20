@@ -907,7 +907,6 @@
       <div class="small">Congratulations &mdash; you won</div>
       <h3 id="handout-name"></h3>
       <p>No email needed! Show this screen to our team at <b>Booth #527</b> to pick up your prize.</p>
-      <div class="code" id="handout-code"></div>
       <div class="actions"><button type="button" class="btn" id="handout-done">Done</button></div>
     </div>
     <div id="retry-step" hidden>
@@ -1553,10 +1552,9 @@
       const fb = document.createElement("div"); fb.className = "flashbang"; document.body.appendChild(fb); setTimeout(() => fb.remove(), 1000);
       chime(); confetti(360, ["#ffd166", "#ffe9a8", "#ffffff", "#e2343e", "#c8961a"]);
     } else {
-      const code = P.top.replace(/[^A-Z]/g, "").slice(0, 1) + "-" + String(Math.floor(1000 + Math.random() * 9000));
-      const list = lsGet(HANDOUT_KEY, []); list.push({ prize: wonPrize, code, time: new Date().toISOString(), kiosk: KIOSK_NAME }); lsSet(HANDOUT_KEY, list);
+      // no claim code for booth handouts (user, 2026-10-20): the screen itself is enough; still counted for the staff panel
+      const list = lsGet(HANDOUT_KEY, []); list.push({ prize: wonPrize, time: new Date().toISOString(), kiosk: KIOSK_NAME }); lsSet(HANDOUT_KEY, list);
       document.getElementById("handout-name").textContent = wonPrize;
-      document.getElementById("handout-code").textContent = code;
       document.getElementById("handout-step").hidden = false;
       result.classList.add("open");
       chime(); confetti(180);
@@ -1714,7 +1712,7 @@
   document.getElementById("staff-csv").addEventListener("click", () => {
     const rows = [["time", "email", "prize", "marketing_opt_in", "kiosk", "sent"]]
       .concat(loadEntries().map(x => [x.time, x.email, x.prize, x.marketing_opt_in, x.kiosk, x.sent || ""]))
-      .concat(lsGet(HANDOUT_KEY, []).map(h => [h.time, "(booth handout " + h.code + ")", h.prize, "", h.kiosk, ""]));
+      .concat(lsGet(HANDOUT_KEY, []).map(h => [h.time, "(booth handout)", h.prize, "", h.kiosk, ""]));
     const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
