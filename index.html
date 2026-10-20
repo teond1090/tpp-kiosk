@@ -223,6 +223,53 @@
   }
   .wheel-screen.open { display: grid; animation: fade .3s ease both; }
   .wheel-wrap { position: relative; justify-self: center; width: min(60vw, calc(100vh - 2 * var(--gutter) - 24px)); aspect-ratio: 1; margin-top: 2vh; }
+  /* cinematic spin (user, 2026-10-20): push-in + spotlight, motion blur, close-up on the pointer for the crawl, impact */
+  .wheel-screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(42% 58% at 34% 52%, transparent 35%, rgba(0,0,0,.88) 100%); opacity: 0; transition: opacity .9s ease; }
+  .wheel-screen.cine::after { opacity: 1; }
+  .wheel-screen > .wheel-wrap, .wheel-screen > .wheel-side { position: relative; z-index: 1; }
+  .wheel-wrap { transition: transform 1.1s cubic-bezier(.2,.8,.2,1); transform-origin: 50% 50%; }
+  .wheel-wrap::before { content: ""; position: absolute; inset: -14%; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,233,168,.30), rgba(255,209,102,.10) 45%, transparent 68%); opacity: 0; transition: opacity .9s ease; }
+  .wheel-screen.cine .wheel-wrap { transform: scale(1.08); }
+  .wheel-screen.cine .wheel-wrap::before { opacity: 1; }
+  .wheel-screen.cine .wheel-side { opacity: .22; }
+  .wheel-side { transition: opacity .6s ease; }
+  .wheel-screen.closeup .wheel-wrap { transform-origin: 50% 3%; transform: scale(1.5); transition: transform 1.8s cubic-bezier(.3,.7,.2,1); }
+  .wheel-screen.impact .wheel-wrap { animation: impact .5s ease-out; }
+  @keyframes impact { 15% { translate: -10px 5px; } 35% { translate: 9px -6px; } 55% { translate: -5px 4px; } 75% { translate: 3px -2px; } 100% { translate: 0 0; } }
+  .impact-ring { position: absolute; left: 50%; top: 2%; width: 12%; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%; pointer-events: none; z-index: 3;
+    border: 6px solid #ffe9a8; box-shadow: 0 0 30px #ffd166; animation: ring .8s ease-out forwards; }
+  @keyframes ring { from { scale: .4; opacity: 1; } to { scale: 4; opacity: 0; } }
+  /* mystery gift pick (gift card wins) */
+  .boxes { display: flex; gap: clamp(16px, 3vw, 56px); justify-content: center; margin: clamp(30px, 5vh, 60px) 0 clamp(10px, 2vh, 24px); }
+  .gbox { position: relative; width: clamp(150px, 15vw, 260px); aspect-ratio: 1 / 1.05; border: 0; background: none; cursor: pointer; padding: 0;
+    animation: bob 2.2s ease-in-out infinite; -webkit-tap-highlight-color: transparent; }
+  .gbox:nth-child(2) { animation-delay: .35s; }
+  .gbox:nth-child(3) { animation-delay: .7s; }
+  .gbox .body { position: absolute; left: 6%; right: 6%; bottom: 0; height: 66%; border-radius: 10px;
+    background: linear-gradient(90deg, transparent 43%, #ffd166 43% 57%, transparent 57%), linear-gradient(160deg, #e2343e, #8f1720);
+    box-shadow: 0 16px 30px rgba(0,0,0,.35), inset 0 -10px 20px rgba(0,0,0,.25); }
+  .gbox .lid { position: absolute; left: 0; right: 0; top: 18%; height: 22%; border-radius: 10px; z-index: 2;
+    background: linear-gradient(90deg, transparent 43%, #ffd166 43% 57%, transparent 57%), linear-gradient(160deg, #ff4b55, #b3202a);
+    box-shadow: 0 6px 14px rgba(0,0,0,.35); transition: transform .55s cubic-bezier(.3,1.6,.5,1), opacity .5s ease .2s; }
+  .gbox .lid::before, .gbox .lid::after { content: ""; position: absolute; bottom: 92%; width: 30%; height: 70%; border: 10px solid #ffd166; }
+  .gbox .lid::before { right: 50%; border-radius: 50% 50% 0 50%; transform: rotate(-20deg); }
+  .gbox .lid::after { left: 50%; border-radius: 50% 50% 50% 0; transform: rotate(20deg); }
+  .gbox .q { position: absolute; left: 0; right: 0; bottom: 14%; z-index: 1; font-family: "Anton", sans-serif; font-size: clamp(48px, 5vw, 96px); color: #fff; text-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  .gbox .reveal { position: absolute; left: 4%; right: 4%; bottom: 14%; z-index: 3; padding: 14px 8px; border-radius: 14px; opacity: 0; transform: translateY(30px) scale(.6);
+    background: linear-gradient(135deg, #fff6dc, #ffd166); color: var(--ink); font-family: "Anton", sans-serif; text-transform: uppercase; line-height: 1.05;
+    font-size: clamp(18px, 1.7vw, 32px); box-shadow: 0 10px 30px rgba(0,0,0,.35); transition: all .5s cubic-bezier(.3,1.6,.5,1); }
+  .gbox .reveal small { display: block; font-family: "Oswald", sans-serif; font-size: .55em; letter-spacing: .1em; color: #8a6510; }
+  .gbox.shake { animation: shake2 .12s linear infinite; }
+  @keyframes shake2 { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+  .gbox.open { animation: none; }
+  .gbox.open .lid { transform: translateY(-130%) rotate(-28deg); opacity: 0; }
+  .gbox.open .q { opacity: 0; }
+  .gbox.open .reveal { opacity: 1; transform: translateY(-40%) scale(1.08); }
+  .gbox.mine .reveal { box-shadow: 0 0 0 5px #fff, 0 0 40px 8px rgba(255,209,102,.95); }
+  .gbox.other { opacity: .5; filter: grayscale(.4); transform: scale(.9); transition: all .5s ease; }
+  .gbox:disabled { cursor: default; }
   #wheel { width: 100%; height: 100%; display: block; }
   .pointer { position: absolute; left: 50%; top: -3%; width: 9%; transform: translateX(-50%); z-index: 1; }
   .pointer svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
@@ -796,6 +843,12 @@
 
 <section class="result" id="result" aria-live="assertive">
   <div class="card">
+    <div id="pick-step" hidden>
+      <div class="small">JACKPOT! Pick a mystery gift</div>
+      <h3 id="pick-h">Tap a box to open it!</h3>
+      <div class="boxes" id="boxes"></div>
+      <div class="actions"><button type="button" class="btn" id="pick-claim" hidden></button></div>
+    </div>
     <div id="claim-step">
       <div class="small">Congratulations &mdash; you won</div>
       <h3 id="prize-name"></h3>
@@ -1282,21 +1335,71 @@
     const end = start + turns * TAU + mod((-win * SEG + jitter) - start);
     const dur = 5200 + power * 2400, t0 = performance.now();
     const ease = x => 1 - Math.pow(1 - x, 5);                          // long, suspenseful crawl over the last slices
-    let lastPeg = Math.floor((angle + SEG / 2) / SEG);
+    let lastPeg = Math.floor((angle + SEG / 2) / SEG), prev = angle, close = false, beat = 0;
+    wheelScreen.classList.add("cine");                                  // camera pushes in, room goes dark, spotlight on
     const step = now => {
       const x = Math.min(1, (now - t0) / dur);
       angle = start + (end - start) * ease(x);
+      const v = Math.abs(angle - prev); prev = angle;
+      wheelCanvas.style.filter = v > 0.02 ? "blur(" + Math.min(5, v * 26).toFixed(1) + "px)" : "none";   // motion blur at speed
       const peg = Math.floor((angle + SEG / 2) / SEG);
       if (peg !== lastPeg) { lastPeg = peg; tick(); flap(); }
+      if (!close && x > 0.74) { close = true; wheelScreen.classList.add("closeup"); }   // close-up on the pointer for the crawl
+      if (close && now - beat > 520) { beat = now; tone(62, 0, 0.2, "sine", 0.5, 42); }  // heartbeat
       if (x < 1) requestAnimationFrame(step);
       else {
-        glow = win; glowUntil = performance.now() + 1100;               // the winning slice pulses first
-        setTimeout(() => { spinning = false; showPrize(win); }, 1000);
+        wheelCanvas.style.filter = "none";
+        wheelScreen.classList.add("impact");
+        const ring = document.createElement("div"); ring.className = "impact-ring";
+        document.querySelector(".wheel-wrap").appendChild(ring); setTimeout(() => ring.remove(), 900);
+        tone(90, 0, 0.35, "triangle", 0.35, 50);
+        glow = win; glowUntil = performance.now() + 1700;               // the winning slice pulses first
+        setTimeout(() => wheelScreen.classList.remove("closeup"), 450);  // pull back out before the result card
+        setTimeout(() => {
+          spinning = false;
+          wheelScreen.classList.remove("cine", "closeup", "impact");
+          showPrize(win);
+        }, 1700);
       }
     };
     requestAnimationFrame(step);
   }
-  function hideSteps() { ["claim-step", "handout-step", "retry-step", "sent-step"].forEach(id => document.getElementById(id).hidden = true); }
+  function hideSteps() { ["pick-step", "claim-step", "handout-step", "retry-step", "sent-step"].forEach(id => document.getElementById(id).hidden = true); }
+  // Gift card win (user, 2026-10-20): three wrapped mystery boxes, each hiding a different gift card; the one they open is theirs.
+  function startPick() {
+    const brands = [...new Set(PRIZES.filter(p => p.kind === "gift").map(p => p.label))].sort(() => Math.random() - 0.5).slice(0, 3);
+    const wrap = document.getElementById("boxes"), claim = document.getElementById("pick-claim");
+    wrap.innerHTML = ""; claim.hidden = true; delete wrap.dataset.picked;
+    document.getElementById("pick-h").textContent = "Tap a box to open it!";
+    brands.forEach(b => {
+      const el = document.createElement("button");
+      el.type = "button"; el.className = "gbox";
+      el.innerHTML = '<span class="lid"></span><span class="body"></span><span class="q">?</span><span class="reveal">' +
+        b.replace(" Gift Card", "") + "<small>GIFT CARD</small></span>";
+      el.addEventListener("click", () => {
+        if (wrap.dataset.picked) return;
+        wrap.dataset.picked = "1";
+        [...wrap.children].forEach(x => x.disabled = true);
+        el.classList.add("shake");
+        for (let k = 0; k < 9; k++) tone(180 + k * 25, k * 0.07, 0.05, "square", 0.08);   // drumroll
+        setTimeout(() => {
+          el.classList.remove("shake"); el.classList.add("open", "mine");
+          wonPrize = b;
+          fanfare(); confetti(260, ["#ffd166", "#ffe9a8", "#ffffff", "#e2343e", "#c8961a"]);
+          document.getElementById("pick-h").textContent = "You got " + b.replace(" Gift Card", "") + "!";
+          setTimeout(() => { [...wrap.children].filter(x => x !== el).forEach(x => x.classList.add("open", "other")); }, 900);
+          setTimeout(() => { claim.textContent = "Claim my " + b; claim.hidden = false; }, 1600);
+        }, 700);
+      });
+      wrap.appendChild(el);
+    });
+  }
+  document.getElementById("pick-claim").addEventListener("click", () => {
+    hideSteps();
+    document.getElementById("prize-name").textContent = wonPrize;
+    claimReset();
+    document.getElementById("claim-step").hidden = false;
+  });
   function showPrize(i) {
     const P = PRIZES[i];
     wonPrize = P.label;
@@ -1311,13 +1414,12 @@
     lsSet(todayKey(), lsGet(todayKey(), 0) + 1); renderToday();
     if (P.kind === "gift") {
       lsSet(GIFT_WINS_KEY, lsGet(GIFT_WINS_KEY, 0) + 1);
-      document.getElementById("prize-name").textContent = wonPrize;
-      claimReset();
-      document.getElementById("claim-step").hidden = false;
       document.querySelector("#claim-step .small").textContent = "JACKPOT! You won";
+      startPick();
+      document.getElementById("pick-step").hidden = false;
       result.classList.add("open", "jackpot");
       const fb = document.createElement("div"); fb.className = "flashbang"; document.body.appendChild(fb); setTimeout(() => fb.remove(), 1000);
-      fanfare(); confetti(360, ["#ffd166", "#ffe9a8", "#ffffff", "#e2343e", "#c8961a"]);
+      chime(); confetti(360, ["#ffd166", "#ffe9a8", "#ffffff", "#e2343e", "#c8961a"]);
     } else {
       const code = P.top.replace(/[^A-Z]/g, "").slice(0, 1) + "-" + String(Math.floor(1000 + Math.random() * 9000));
       const list = lsGet(HANDOUT_KEY, []); list.push({ prize: wonPrize, code, time: new Date().toISOString(), kiosk: KIOSK_NAME }); lsSet(HANDOUT_KEY, list);
