@@ -394,6 +394,35 @@
   .staff.open { display: block; }
   .staff .btn { font-size: 16px; padding: 10px 18px; margin: 10px 8px 0 0; }
 
+  /* ---------- quick connect form (user, 2026-10-20) ---------- */
+  .connect-btn {
+    display: inline-flex; align-items: center; gap: 12px; border: 0; cursor: pointer; text-align: left;
+    background: linear-gradient(135deg, var(--red-hi), var(--red)); color: #fff; border-radius: 999px;
+    padding: clamp(8px, 1vh, 14px) clamp(18px, 1.6vw, 30px) clamp(8px, 1vh, 14px) clamp(14px, 1.2vw, 22px);
+    box-shadow: 0 8px 22px rgba(179,32,42,.45); animation: pulse 2.6s ease-in-out infinite;
+    margin-bottom: clamp(6px, 1.2vh, 16px); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .connect-btn:active { transform: scale(.96); }
+  .connect-btn svg { width: clamp(26px, 2.2vw, 40px); height: auto; flex: none; }
+  .connect-btn b { display: block; font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .05em; font-size: clamp(18px, 1.5vw, 30px); line-height: 1.05; }
+  .connect-btn small { display: block; font-size: clamp(12px, .85vw, 17px); opacity: .92; }
+  .connect { position: fixed; inset: 0; z-index: 13; display: none; background: #f4f4f6; color: var(--ink);
+    padding: clamp(14px, 2.4vh, 32px) clamp(16px, 2.4vw, 48px); grid-template-rows: auto 1fr; row-gap: clamp(10px, 2vh, 24px); }
+  .connect.open { display: grid; animation: fade .3s ease both; }
+  .connect-top { display: flex; align-items: center; gap: 20px; }
+  .connect-top .back { position: static; }
+  .connect-top h2 { flex: 1; text-align: center; font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(28px, 3vw, 60px); }
+  .connect-top h2 span { color: var(--red-hi); }
+  .connect-top img { height: clamp(44px, 7vh, 90px); width: auto; }
+  .connect-body { min-height: 0; display: grid; grid-template-columns: 1fr clamp(220px, 20vw, 360px); gap: clamp(14px, 2vw, 36px); }
+  .connect-frame { min-height: 0; border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 16px 40px rgba(0,0,0,.15); }
+  .connect-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .connect-side { align-self: center; text-align: center; background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 16px 40px rgba(0,0,0,.12); }
+  .connect-side img { width: 100%; height: auto; }
+  .connect-side p { margin-top: 10px; color: var(--muted); font-size: clamp(15px, 1.2vw, 24px); line-height: 1.3; }
+  .connect-side b { color: var(--ink); }
+  @media (orientation: portrait), (max-width: 900px) { .connect-body { grid-template-columns: 1fr; } .connect-side { display: none; } }
+
   /* ---------- footer ---------- */
   footer {
     position: relative;
@@ -801,10 +830,29 @@
       <b>tenantpropertyprotection.com</b> <span class="dot">&middot;</span> <span class="phone">877-575-7774</span>
     </div>
     <div class="pete">
+      <button class="connect-btn" id="open-connect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <span><b>Connect Form</b><small>Leave your info &mdash; we'll reach out</small></span>
+      </button>
       <img src="assets/img/pete.webp" alt="Protection Pete">
     </div>
   </footer>
 </main>
+
+<section class="connect" id="connect" aria-label="Connect form">
+  <div class="connect-top">
+    <button class="back" id="connect-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg> Home</button>
+    <h2>Connect with <span>TPP</span></h2>
+    <img src="assets/img/logo-light.webp" alt="Tenant Property Protection">
+  </div>
+  <div class="connect-body">
+    <div class="connect-frame"><iframe id="connect-frame" title="TPP connect form" loading="lazy"></iframe></div>
+    <aside class="connect-side">
+      <img src="assets/img/connect-qr.png" alt="QR code for the connect form">
+      <p>Prefer your phone?<br><b>Scan to fill it out</b> on the go.</p>
+    </aside>
+  </div>
+</section>
 
 <section class="ppage" id="ppage" aria-live="polite">
   <div class="ptop">
@@ -1160,6 +1208,7 @@
     openPlayer(pageId, start);
   });
   function goHome() {
+    closeConnect();
     ppage.classList.remove("open");
     closePlayer();
     closeWheel();
@@ -1199,10 +1248,31 @@
   const resetIdle = () => {
     clearTimeout(idle);
     if (document.getElementById("wheel-screen").classList.contains("open")) return;   // no timeout on the prize wheel
+    if (document.getElementById("connect").classList.contains("open")) { idle = setTimeout(startAttract, 4 * 60 * 1000); return; }
     idle = setTimeout(startAttract, IDLE_MS);
   };
   ["pointerdown", "keydown"].forEach(e => addEventListener(e, resetIdle, { passive: true }));
   resetIdle();
+
+  // ---------------- Quick connect form ----------------
+  // Touches inside the embedded form don't reach this page, so the 60 s idle timer can't see someone typing: while
+  // the form is open the kiosk waits CONNECT_IDLE_MS instead, then closes it and returns to the intro.
+  const CONNECT_URL = "https://tenantpropertyprotection.com/contact-5844";
+  const CONNECT_IDLE_MS = 4 * 60 * 1000;
+  const connectEl = document.getElementById("connect"), connectFrame = document.getElementById("connect-frame");
+  function openConnect() {
+    connectFrame.src = CONNECT_URL;                                       // fresh, empty form for every visitor
+    connectEl.classList.add("open");
+    history.replaceState(null, "", "#connect");
+    clearTimeout(idle); idle = setTimeout(startAttract, CONNECT_IDLE_MS);
+  }
+  function closeConnect() {
+    if (!connectEl.classList.contains("open")) return;
+    connectEl.classList.remove("open");
+    connectFrame.removeAttribute("src");                                  // wipe what the last visitor typed
+  }
+  document.getElementById("open-connect").addEventListener("click", openConnect);
+  document.getElementById("connect-back").addEventListener("click", () => { closeConnect(); goHome(); resetIdle(); });
 
   // Kiosk hardening: no long-press menus, no pinch zoom
   addEventListener("contextmenu", e => e.preventDefault());
