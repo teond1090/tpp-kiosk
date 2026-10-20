@@ -300,7 +300,17 @@
     border-radius: 50%; background: #fff; display: grid; place-items: center;
     box-shadow: 0 0 0 6px #1a1a1f, 0 8px 24px rgba(0,0,0,.5);
   }
-  .hub img { width: 62%; height: auto; }
+  .hub img { width: 62%; height: auto; animation: hubglint 4s ease-in-out infinite; }
+  @keyframes hubglint { 0%, 80%, 100% { filter: none; transform: scale(1); } 88% { filter: brightness(1.5) drop-shadow(0 0 12px #ffe9a8); transform: scale(1.08); } }
+  .hub { animation: hubpulse 2.4s ease-in-out infinite; }
+  @keyframes hubpulse { 50% { box-shadow: 0 0 0 6px #1a1a1f, 0 0 0 14px rgba(255,209,102,.35), 0 8px 24px rgba(0,0,0,.5); } }
+  #bokeh { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  /* hold button: expanding rings invite a touch */
+  .hold-btn::before, .hold-btn::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 4px solid rgba(255,90,100,.7);
+    animation: invite 2.2s ease-out infinite; pointer-events: none; }
+  .hold-btn::after { animation-delay: 1.1s; }
+  @keyframes invite { from { transform: scale(1); opacity: .9; } to { transform: scale(1.45); opacity: 0; } }
+  .hold-btn.holding::before, .hold-btn.holding::after, .hold-btn:disabled::before, .hold-btn:disabled::after { animation: none; opacity: 0; }
   .wheel-side { text-align: center; }
   .wheel-side h2 { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; font-size: clamp(40px, 5vw, 104px); line-height: 1; }
   .wheel-side h2 span { color: var(--red-hi); }
@@ -854,6 +864,7 @@
     <h2>Spin<br>to <span>win!</span></h2>
     <p class="how">Press and hold the button to power up. Let go to spin!</p>
   </div>
+  <canvas id="bokeh"></canvas>
   <div class="lb top"></div><div class="lb bot"></div>
   <div class="wheel-wrap">
     <div class="rays"></div>
@@ -1239,6 +1250,7 @@
   const powerTxt = document.getElementById("power");
   const result = document.getElementById("result");
   const pointerEl = document.querySelector(".pointer");
+  const wrapEl = document.querySelector(".wheel-wrap");
   const SEG = (Math.PI * 2) / PRIZES.length;
   let angle = 0, spinning = false, holding = false, holdStart = 0, power = 0, raf = 0;
   let glow = -1, glowUntil = 0, retryUsed = false;
@@ -1335,6 +1347,28 @@
       c.restore();
     });
     c.restore();
+    // rotating sheen + twinkling stars on the gift card slices (idle animation)
+    c.save(); c.translate(R, R);
+    c.beginPath(); c.arc(0, 0, R * 0.94, 0, Math.PI * 2); c.clip();
+    if (c.createConicGradient) {
+      const g = c.createConicGradient(now / 1800, 0, 0);
+      g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.06, "rgba(255,255,255,.22)"); g.addColorStop(0.12, "rgba(255,255,255,0)");
+      g.addColorStop(0.56, "rgba(255,255,255,0)"); g.addColorStop(0.62, "rgba(255,255,255,.14)"); g.addColorStop(0.68, "rgba(255,255,255,0)"); g.addColorStop(1, "rgba(255,255,255,0)");
+      c.fillStyle = g; c.fillRect(-R, -R, R * 2, R * 2);
+    }
+    c.rotate(angle);
+    PRIZES.forEach((p, i) => {
+      if (p.kind !== "gift") return;
+      const tw = Math.max(0, Math.sin(now / 260 + i * 1.7));
+      if (tw < 0.2) return;
+      const mid = -Math.PI / 2 + i * SEG, r0 = R * 0.38, sz = R * 0.035 * tw;
+      const x = Math.cos(mid) * r0, y = Math.sin(mid) * r0;
+      c.fillStyle = "rgba(255,240,190," + tw + ")";
+      c.beginPath();
+      for (let k = 0; k < 8; k++) { const rr = k % 2 ? sz * 0.3 : sz, aa = k * Math.PI / 4; c.lineTo(x + Math.cos(aa) * rr, y + Math.sin(aa) * rr); }
+      c.closePath(); c.fill();
+    });
+    c.restore();
     // outer rim with chasing lights (they race while the wheel spins, all gold on a win)
     c.beginPath(); c.arc(R, R, R * 0.97, 0, Math.PI * 2); c.lineWidth = R * 0.06; c.strokeStyle = "#1a1a1f"; c.stroke();
     const period = spinning ? 70 : holding ? 120 : 250, win = now < glowUntil;
@@ -1344,7 +1378,25 @@
       c.fillStyle = on ? "#ffe9a8" : (win ? "#ffd166" : "#e2343e"); c.fill();
     }
   }
-  function loop() { drawWheel(); drawSparks(); raf = requestAnimationFrame(loop); }
+  const bokehCv = document.getElementById("bokeh"), bctx = bokehCv.getContext("2d");
+  const motes = Array.from({ length: 46 }, () => ({ x: Math.random(), y: Math.random(), r: 2 + Math.random() * 7, v: 0.0004 + Math.random() * 0.0012, ph: Math.random() * 6 }));
+  function drawBokeh() {
+    const w = bokehCv.clientWidth, h = bokehCv.clientHeight;
+    if (bokehCv.width !== w || bokehCv.height !== h) { bokehCv.width = w; bokehCv.height = h; }
+    bctx.clearRect(0, 0, w, h);
+    const boost = spinning ? 3 : holding ? 1 + power * 2 : 1;          // the motes rush upward when the wheel goes
+    for (const m of motes) {
+      m.y -= m.v * boost; if (m.y < -0.05) { m.y = 1.05; m.x = Math.random(); }
+      const a = 0.18 + 0.18 * Math.sin(performance.now() / 900 + m.ph);
+      const g = bctx.createRadialGradient(m.x * w, m.y * h, 0, m.x * w, m.y * h, m.r * 3);
+      g.addColorStop(0, "rgba(255,214,140," + a + ")"); g.addColorStop(1, "rgba(255,214,140,0)");
+      bctx.fillStyle = g; bctx.beginPath(); bctx.arc(m.x * w, m.y * h, m.r * 3, 0, Math.PI * 2); bctx.fill();
+    }
+  }
+  function loop() {
+    if (!spinning && !holding && !result.classList.contains("open")) angle += 0.0022;   // idle: the wheel drifts slowly
+    drawBokeh(); drawWheel(); drawSparks(); raf = requestAnimationFrame(loop);
+  }
 
   function renderToday() {
     const n = lsGet(todayKey(), 0);
@@ -1392,7 +1444,9 @@
       holdFill.style.height = (power * 100) + "%";
       powerTxt.textContent = "Power " + Math.round(power * 100) + "%";
       if (hum) hum.o.frequency.value = 90 + power * 260;               // the hum rises as it charges
-      angle += 0.02 + power * 0.06;                                    // wheel creeps forward while charging
+      angle -= 0.004 + power * 0.022;                                  // anticipation: the wheel winds back as it charges
+      const sh = power * 5;                                            // ...and rumbles harder as the power builds
+      wrapEl.style.translate = ((Math.random() - 0.5) * sh).toFixed(1) + "px " + ((Math.random() - 0.5) * sh).toFixed(1) + "px";
       requestAnimationFrame(charge);
     };
     requestAnimationFrame(charge);
@@ -1400,6 +1454,7 @@
   function release() {
     if (!holding || spinning) return;
     holding = false; spinning = true; holdBtn.disabled = true; humStop();
+    wrapEl.style.translate = "";
     holdBtn.classList.remove("holding"); holdLbl.textContent = "Spinning...";
     const win = pickPrize();
     const TAU = Math.PI * 2, mod = x => ((x % TAU) + TAU) % TAU;
