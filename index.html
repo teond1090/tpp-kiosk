@@ -976,6 +976,8 @@
 <section class="staff" id="staff" aria-label="Staff tools">
   <b>Prize entries on this kiosk</b>
   <div id="staff-stats"></div>
+  <label style="display:block;margin-top:10px">Kiosk key (from the prize sheet setup):
+    <input id="staff-key" type="text" autocomplete="off" style="width:140px;font-size:18px;padding:4px 8px;text-transform:uppercase"> <button class="btn" id="staff-key-save">Save</button></label>
   <label style="display:block;margin-top:10px">Gift card limit on this kiosk:
     <input id="staff-limit" type="number" min="0" step="1" style="width:90px;font-size:18px;padding:4px 8px"> <button class="btn" id="staff-limit-save">Save</button></label>
   <button class="btn" id="staff-csv">Download CSV</button>
@@ -1303,7 +1305,18 @@
     GIFT("Subway Gift Card", "SUBWAY", "#ffffff", "#1a1a1f"), WINE, RETRY,
   ].map(p => Object.assign({}, p));
   PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
-  const GIFT_LIMIT_KEY = "tpp-gift-limit", GIFT_WINS_KEY = "tpp-gift-wins", HANDOUT_KEY = "tpp-handouts";
+  const GIFT_LIMIT_KEY = "tpp-gift-limit", GIFT_WINS_KEY = "tpp-gift-wins", HANDOUT_KEY = "tpp-handouts", KEY_KEY = "tpp-kiosk-key";
+  // Gift card stock from the prize sheet's "Gift Card Inventory" tab (physical cards emailed as e-gift cards, 2026-10-21):
+  // the mystery boxes only offer brands that are in stock. null = unknown (offline / old endpoint): offer every brand.
+  let STOCK = null;
+  async function loadStock() {
+    try {
+      const r = await fetch(PRIZE_ENDPOINT + "?stock=1&t=" + Date.now());
+      const j = await r.json();
+      if (j && typeof j === "object") STOCK = j;
+    } catch (e) { /* keep the last known stock */ }
+  }
+  const stockTotal = () => STOCK ? Object.values(STOCK).reduce((a, b) => a + b, 0) : Infinity;
   const DEFAULT_GIFT_LIMIT = 25;
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -1477,6 +1490,7 @@
     history.replaceState(null, "", "#wheel");
     retryUsed = false;
     clearTimeout(idle);                                                  // the wheel never times out to the intro
+    loadStock();
     wheelScreen.classList.add("enter"); setTimeout(() => wheelScreen.classList.remove("enter"), 1200);
     loadSfx();
     resetHold(); renderToday();
@@ -1493,7 +1507,7 @@
   }
   function pickPrize() {
     // gift cards drop out once the kiosk's limit is reached; the free re-spin can't land on Try Again
-    const w = PRIZES.map(p => (p.kind === "gift" && giftsLeft() <= 0) || (p.kind === "retry" && retryUsed) ? 0 : p.weight);
+    const w = PRIZES.map(p => (p.kind === "gift" && (giftsLeft() <= 0 || stockTotal() <= 0)) || (p.kind === "retry" && retryUsed) ? 0 : p.weight);
     const total = w.reduce((sum, x) => sum + x, 0);
     let r = Math.random() * total;
     for (let i = 0; i < PRIZES.length; i++) { r -= w[i]; if (r <= 0 && w[i] > 0) return i; }
@@ -1567,7 +1581,16 @@
   function hideSteps() { ["pick-step", "claim-step", "handout-step", "retry-step", "sent-step"].forEach(id => document.getElementById(id).hidden = true); }
   // Gift card win (user, 2026-10-20): three wrapped mystery boxes, each hiding a different gift card; the one they open is theirs.
   function startPick() {
-    const brands = [...new Set(PRIZES.filter(p => p.kind === "gift").map(p => p.label))].sort(() => Math.random() - 0.5).slice(0, 3);
+    const all = [...new Set(PRIZES.filter(p => p.kind === "gift").map(p => p.label))];
+    let pool = all;
+    if (STOCK) {                                                        // one entry per card in stock
+      pool = [];
+      Object.entries(STOCK).forEach(([b, n]) => { for (let k = 0; k < n; k++) pool.push(b); });
+      if (!pool.length) pool = all;
+    }
+    pool = pool.sort(() => Math.random() - 0.5);
+    const distinct = [...new Set(pool)];
+    const brands = distinct.length >= 3 ? distinct.slice(0, 3) : [0, 1, 2].map(k => distinct[k % distinct.length]);
     const wrap = document.getElementById("boxes"), claim = document.getElementById("pick-claim");
     wrap.innerHTML = ""; claim.hidden = true; delete wrap.dataset.picked;
     document.getElementById("pick-h").textContent = "Tap a box to open it!";
@@ -1585,6 +1608,7 @@
         setTimeout(() => {
           el.classList.remove("shake"); el.classList.add("open", "mine");
           wonPrize = b;
+          if (STOCK && STOCK[b]) STOCK[b]--;
           fanfare(); confetti(260, ["#ffd166", "#ffe9a8", "#ffffff", "#e2343e", "#c8961a"]);
           document.getElementById("pick-h").textContent = "You got " + b.replace(" Gift Card", "") + "!";
           setTimeout(() => { [...wrap.children].filter(x => x !== el).forEach(x => x.classList.add("open", "other")); }, 900);
@@ -1685,7 +1709,7 @@
       // Form-encoded + no-cors: no CORS preflight; Apps Script reads the fields from e.parameter
       const body = new URLSearchParams({
         email: entry.email, prize: entry.prize, marketing_opt_in: entry.marketing_opt_in ? "Yes" : "No",
-        kiosk: entry.kiosk, time: entry.time, id: entry.id,
+        kiosk: entry.kiosk, time: entry.time, id: entry.id, key: lsGet(KEY_KEY, ""),
       });
       await fetch(PRIZE_ENDPOINT, { method: "POST", mode: "no-cors", body });
       return true;
@@ -1778,6 +1802,10 @@
       "<br>Gift cards won: " + lsGet(GIFT_WINS_KEY, 0) + " of " + lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) + " (" + giftsLeft() + " left)" +
       "<br>Handouts: " + (Object.entries(by).map(([k, v]) => k + " " + v).join(", ") || "none yet");
     document.getElementById("staff-limit").value = lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT);
+    document.getElementById("staff-key").value = lsGet(KEY_KEY, "");
+    document.getElementById("staff-stats").innerHTML += "<br>E-gift cards in stock: " +
+      (STOCK ? (Object.entries(STOCK).map(([k, v]) => k.replace(" Gift Card", "") + " " + v).join(", ") || "none") : "unknown") +
+      (lsGet(KEY_KEY, "") ? "" : "<br><b style='color:#c3202a'>No kiosk key set: gift cards won't be emailed automatically.</b>");
   }
   document.getElementById("staff-csv").addEventListener("click", () => {
     const rows = [["time", "email", "prize", "marketing_opt_in", "kiosk", "sent"]]
@@ -1789,12 +1817,15 @@
     a.download = "tpp-prize-entries.csv"; a.click();
   });
   document.getElementById("staff-retry").addEventListener("click", flushEntries);
+  document.getElementById("staff-key-save").addEventListener("click", () => {
+    lsSet(KEY_KEY, document.getElementById("staff-key").value.trim().toUpperCase()); renderStaff();
+  });
   document.getElementById("staff-limit-save").addEventListener("click", () => {
     const v = Math.max(0, parseInt(document.getElementById("staff-limit").value, 10) || 0);
     lsSet(GIFT_LIMIT_KEY, v); renderStaff();
   });
   document.getElementById("staff-close").addEventListener("click", () => { staffEl.classList.remove("open"); history.replaceState(null, "", location.pathname + location.search); });
-  if (location.hash === "#staff") { staffEl.classList.add("open"); renderStaff(); }
+  if (location.hash === "#staff") { staffEl.classList.add("open"); loadStock().then(renderStaff); renderStaff(); }
 
   // ---------------- Interactive product player ----------------
   const player = document.getElementById("player");
