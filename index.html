@@ -1307,7 +1307,7 @@
   PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
   // every gift card brand a mystery box can hold (the wheel's slices just say GIFT CARD); in-stock brands win when known
   const GIFT_BRANDS = ["Amazon", "Visa", "American Express", "Starbucks", "Chick-fil-A", "Chipotle", "Domino's",
-                       "Olive Garden", "Panera", "Subway"].map(b => b + " Gift Card");
+                       "Five Guys", "Olive Garden", "Panera", "Subway"].map(b => b + " Gift Card");
   const GIFT_LIMIT_KEY = "tpp-gift-limit", GIFT_WINS_KEY = "tpp-gift-wins", HANDOUT_KEY = "tpp-handouts", KEY_KEY = "tpp-kiosk-key";
   // Gift card stock from the prize sheet's "Gift Card Inventory" tab (physical cards emailed as e-gift cards, 2026-10-21):
   // the mystery boxes only offer brands that are in stock. null = unknown (offline / old endpoint): offer every brand.
