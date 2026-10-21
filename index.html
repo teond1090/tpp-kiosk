@@ -1543,7 +1543,8 @@
     holding = false; spinning = true; holdBtn.disabled = true; humStop();
     wrapEl.style.translate = "";
     holdBtn.classList.remove("holding"); holdLbl.textContent = "Spinning...";
-    const win = pickPrize();
+    const forced = lsGet(TEST_KEY, "");                                // staff test spin: land on a gift card once
+    const win = forced ? PRIZES.findIndex(p => p.kind === "gift") : pickPrize();
     const TAU = Math.PI * 2, mod = x => ((x % TAU) + TAU) % TAU;
     const turns = 4 + Math.round(power * 5);                           // more power = more spins
     const jitter = (Math.random() - 0.5) * SEG * 0.7;                  // land inside the slice, not dead centre
@@ -1584,6 +1585,9 @@
   }
   function hideSteps() { ["pick-step", "claim-step", "handout-step", "retry-step", "sent-step"].forEach(id => document.getElementById(id).hidden = true); }
   // Gift card win (user, 2026-10-20): three wrapped mystery boxes, each hiding a different gift card; the one they open is theirs.
+  // ---- one-time staff test spin: #testspin=<brand> (e.g. fiveguys); cleared as soon as that spin lands
+  const TEST_KEY = "tpp-test-spin";
+  let testBrand = "";                                                   // the brand for the current test result + claim
   function startPick() {
     const all = GIFT_BRANDS;
     let pool = all;
@@ -1594,7 +1598,8 @@
     }
     pool = pool.sort(() => Math.random() - 0.5);
     const distinct = [...new Set(pool)];
-    const brands = distinct.length >= 3 ? distinct.slice(0, 3) : [0, 1, 2].map(k => distinct[k % distinct.length]);
+    const brands = testBrand ? [testBrand, testBrand, testBrand]
+      : distinct.length >= 3 ? distinct.slice(0, 3) : [0, 1, 2].map(k => distinct[k % distinct.length]);
     const wrap = document.getElementById("boxes"), claim = document.getElementById("pick-claim");
     wrap.innerHTML = ""; claim.hidden = true; delete wrap.dataset.picked;
     document.getElementById("pick-h").textContent = "Tap a box to open it!";
@@ -1642,7 +1647,9 @@
     }
     lsSet(todayKey(), lsGet(todayKey(), 0) + 1); renderToday();
     if (P.kind === "gift") {
-      lsSet(GIFT_WINS_KEY, lsGet(GIFT_WINS_KEY, 0) + 1);
+      testBrand = lsGet(TEST_KEY, "");                                  // test spin: these boxes hold the test brand...
+      lsSet(TEST_KEY, "");                                              // ...and the next spin is back to normal odds
+      if (!testBrand) lsSet(GIFT_WINS_KEY, lsGet(GIFT_WINS_KEY, 0) + 1);
       document.querySelector("#claim-step .small").textContent = "JACKPOT! You won";
       startPick();
       document.getElementById("pick-step").hidden = false;
@@ -1713,7 +1720,7 @@
       // Form-encoded + no-cors: no CORS preflight; Apps Script reads the fields from e.parameter
       const body = new URLSearchParams({
         email: entry.email, prize: entry.prize, marketing_opt_in: entry.marketing_opt_in ? "Yes" : "No",
-        kiosk: entry.kiosk, time: entry.time, id: entry.id, key: lsGet(KEY_KEY, ""),
+        kiosk: entry.kiosk, time: entry.time, id: entry.id, key: lsGet(KEY_KEY, ""), test: entry.test ? "1" : "",
       });
       await fetch(PRIZE_ENDPOINT, { method: "POST", mode: "no-cors", body });
       return true;
@@ -1738,7 +1745,7 @@
     document.getElementById("claim-send").disabled = false;
     claimStep.hidden = false; sentStep.hidden = true;
   }
-  function closeResult() { result.classList.remove("open", "jackpot"); resetHold(); }
+  function closeResult() { result.classList.remove("open", "jackpot"); resetHold(); testBrand = ""; }
 
   document.getElementById("claim-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -1750,11 +1757,11 @@
     }
     const list = loadEntries();
     const dupe = list.find(x => x.email === email);
-    if (dupe) { errEl.textContent = "This email already has a prize: " + dupe.prize + ". One gift card per person."; return; }
+    if (dupe && !testBrand) { errEl.textContent = "This email already has a prize: " + dupe.prize + ". One gift card per person."; return; }
     const entry = {
       id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email, prize: wonPrize,
       marketing_opt_in: document.getElementById("claim-optin").checked,
-      kiosk: KIOSK_NAME, time: new Date().toISOString(), sent: null,
+      kiosk: KIOSK_NAME, time: new Date().toISOString(), sent: null, test: !!testBrand,
     };
     list.push(entry); saveEntries(list);
     document.getElementById("claim-send").disabled = true;
@@ -1972,6 +1979,14 @@
   document.addEventListener("fullscreenchange", syncFs);
   document.addEventListener("webkitfullscreenchange", syncFs);
 
+  // staff test spin link: .../tpp-kiosk/#testspin=fiveguys (brand words, no spaces) -> opens the wheel, next spin rigged once
+  { const m = /^#testspin=([a-z-]+)$/i.exec(location.hash);
+    if (m) {
+      const want = m[1].toLowerCase().replace(/[^a-z]/g, "");
+      const all = GIFT_BRANDS.concat(["Five Guys Gift Card"]);
+      const brand = all.find(b => b.toLowerCase().replace(/[^a-z]/g, "").startsWith(want)) || "";
+      if (brand) { lsSet(TEST_KEY, brand); history.replaceState(null, "", location.pathname + location.search + "#wheel"); }
+    } }
   // one-tap setup link: .../tpp-kiosk/#key=XXXXXXXX saves the kiosk key on this kiosk (gift cards get emailed), then
   // wipes it from the address bar and carries on as normal
   { const m = /^#key=([0-9A-Za-z]{6,12})$/.exec(location.hash);
