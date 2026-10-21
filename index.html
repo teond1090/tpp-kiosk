@@ -1305,6 +1305,9 @@
     GIFT("Subway Gift Card", "SUBWAY", "#ffffff", "#1a1a1f"), WINE, RETRY,
   ].map(p => Object.assign({}, p));
   PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
+  // every gift card brand a mystery box can hold (the wheel's slices just say GIFT CARD); in-stock brands win when known
+  const GIFT_BRANDS = ["Amazon", "Visa", "American Express", "Starbucks", "Chick-fil-A", "Chipotle", "Domino's",
+                       "Olive Garden", "Panera", "Subway"].map(b => b + " Gift Card");
   const GIFT_LIMIT_KEY = "tpp-gift-limit", GIFT_WINS_KEY = "tpp-gift-wins", HANDOUT_KEY = "tpp-handouts", KEY_KEY = "tpp-kiosk-key";
   // Gift card stock from the prize sheet's "Gift Card Inventory" tab (physical cards emailed as e-gift cards, 2026-10-21):
   // the mystery boxes only offer brands that are in stock. null = unknown (offline / old endpoint): offer every brand.
@@ -1581,7 +1584,7 @@
   function hideSteps() { ["pick-step", "claim-step", "handout-step", "retry-step", "sent-step"].forEach(id => document.getElementById(id).hidden = true); }
   // Gift card win (user, 2026-10-20): three wrapped mystery boxes, each hiding a different gift card; the one they open is theirs.
   function startPick() {
-    const all = [...new Set(PRIZES.filter(p => p.kind === "gift").map(p => p.label))];
+    const all = GIFT_BRANDS;
     let pool = all;
     if (STOCK) {                                                        // one entry per card in stock
       pool = [];
