@@ -1972,6 +1972,10 @@
   document.addEventListener("fullscreenchange", syncFs);
   document.addEventListener("webkitfullscreenchange", syncFs);
 
+  // one-tap setup link: .../tpp-kiosk/#key=XXXXXXXX saves the kiosk key on this kiosk (gift cards get emailed), then
+  // wipes it from the address bar and carries on as normal
+  { const m = /^#key=([0-9A-Za-z]{6,12})$/.exec(location.hash);
+    if (m) { lsSet(KEY_KEY, m[1].toUpperCase()); history.replaceState(null, "", location.pathname + location.search); } }
   // Deep link support (#secure, #rv, ...) skips the promo; otherwise start on the loop
   if (PRODUCTS[location.hash.slice(1)]) openProduct(location.hash.slice(1));
   else if (location.hash === "#wheel") openWheel();
