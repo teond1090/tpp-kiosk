@@ -1981,18 +1981,21 @@
   document.addEventListener("fullscreenchange", syncFs);
   document.addEventListener("webkitfullscreenchange", syncFs);
 
-  // staff test spin link: .../tpp-kiosk/#testspin=fiveguys (brand words, no spaces) -> opens the wheel, next spin rigged once
-  { const m = /^#testspin=([a-z-]+)$/i.exec(location.hash);
-    if (m) {
-      const want = m[1].toLowerCase().replace(/[^a-z]/g, "");
-      const all = GIFT_BRANDS.concat(["Five Guys Gift Card"]);
-      const brand = all.find(b => b.toLowerCase().replace(/[^a-z]/g, "").startsWith(want)) || "";
-      if (brand) { lsSet(TEST_KEY, brand); history.replaceState(null, "", location.pathname + location.search + "#wheel"); }
+  // staff setup links (hash, never sent to a server): #key=XXXXXXXX saves the kiosk key; #testspin=fiveguys rigs the next
+  // spin once and opens the wheel; both can be combined: #key=XXXXXXXX&testspin=fiveguys. Add ?fresh=<anything> to the
+  // address so a kiosk that cached an older page loads this one.
+  { const h = new URLSearchParams(location.hash.slice(1));
+    const k = h.get("key"), t = h.get("testspin");
+    if (k && /^[0-9A-Za-z]{6,12}$/.test(k) || t) {
+      if (k && /^[0-9A-Za-z]{6,12}$/.test(k)) lsSet(KEY_KEY, k.toUpperCase());
+      let toWheel = false;
+      if (t) {
+        const want = t.toLowerCase().replace(/[^a-z]/g, "");
+        const brand = GIFT_BRANDS.concat(["Five Guys Gift Card"]).find(b => b.toLowerCase().replace(/[^a-z]/g, "").startsWith(want)) || "";
+        if (brand) { lsSet(TEST_KEY, brand); toWheel = true; }
+      }
+      history.replaceState(null, "", location.pathname + (toWheel ? "#wheel" : ""));
     } }
-  // one-tap setup link: .../tpp-kiosk/#key=XXXXXXXX saves the kiosk key on this kiosk (gift cards get emailed), then
-  // wipes it from the address bar and carries on as normal
-  { const m = /^#key=([0-9A-Za-z]{6,12})$/.exec(location.hash);
-    if (m) { lsSet(KEY_KEY, m[1].toUpperCase()); history.replaceState(null, "", location.pathname + location.search); } }
   // Deep link support (#secure, #rv, ...) skips the promo; otherwise start on the loop
   if (PRODUCTS[location.hash.slice(1)]) openProduct(location.hash.slice(1));
   else if (location.hash === "#wheel") openWheel();
