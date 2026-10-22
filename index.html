@@ -1741,6 +1741,26 @@
   addEventListener("online", flushEntries);
   setTimeout(flushEntries, 5000);
 
+  // ---------------- keep the kiosk current on the original link ----------------
+  // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
+  // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
+  const BUILD = "2026-10-21d";
+  async function checkVersion() {
+    try {
+      const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
+      if (!v || v === BUILD) return;
+      // someone is mid-video, mid-form or mid-spin: try again on the next check (an idle wheel reloads back onto the wheel)
+      const busy = spinning || holding || ["ppage", "player", "result", "connect"].some(id => document.getElementById(id).classList.contains("open"));
+      if (!busy || document.getElementById("attract").classList.contains("on")) location.reload();
+    } catch (e) {}
+  }
+  setInterval(checkVersion, 2 * 60 * 1000);
+  setTimeout(checkVersion, 20 * 1000);
+  // gift card stock (and a test spin armed in the prize script) is fetched at start and every minute, not only when the
+  // wheel opens, so an armed test is ready before the first spin
+  setTimeout(() => loadStock(), 1500);
+  setInterval(() => loadStock(), 60 * 1000);
+
   function claimReset() {
     emailEl.value = ""; errEl.textContent = ""; emailEl.classList.remove("bad");
     document.getElementById("claim-optin").checked = false;
