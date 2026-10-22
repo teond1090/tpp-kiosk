@@ -1317,6 +1317,8 @@
       const r = await fetch(PRIZE_ENDPOINT + "?stock=1&t=" + Date.now());
       const j = await r.json();
       // only brands the kiosk offers (e.g. a Five Guys test card in the sheet never shows up here)
+      // a test spin armed remotely in the prize script (armTestSpin): rig the next spin once
+      if (j && j._test && !lsGet(TEST_KEY, "") && !testBrand) lsSet(TEST_KEY, String(j._test));
       if (j && typeof j === "object") STOCK = Object.fromEntries(Object.entries(j).filter(([b]) => GIFT_BRANDS.includes(b)));
     } catch (e) { /* keep the last known stock */ }
   }
