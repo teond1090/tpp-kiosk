@@ -1306,7 +1306,7 @@
   ].map(p => Object.assign({}, p));
   PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
   // every gift card brand a mystery box can hold (the wheel's slices just say GIFT CARD); in-stock brands win when known
-  const GIFT_BRANDS = ["Amazon", "Visa", "American Express", "Starbucks", "Chick-fil-A", "Chipotle", "Domino's",
+  const GIFT_BRANDS = ["Amazon", "Visa", "Mastercard", "American Express", "Starbucks", "Chick-fil-A", "Chipotle", "Domino's",
                        "Olive Garden", "Panera", "Subway"].map(b => b + " Gift Card");
   const GIFT_LIMIT_KEY = "tpp-gift-limit", GIFT_WINS_KEY = "tpp-gift-wins", HANDOUT_KEY = "tpp-handouts", KEY_KEY = "tpp-kiosk-key";
   // Gift card stock from the prize sheet's "Gift Card Inventory" tab (physical cards emailed as e-gift cards, 2026-10-21):
@@ -1744,7 +1744,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-10-21d";
+  const BUILD = "2026-10-23a";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
