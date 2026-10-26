@@ -390,6 +390,8 @@
   .btn:disabled { opacity: .5; }
   .sent .big { font-family: "Anton", sans-serif; text-transform: uppercase; font-size: clamp(34px, 4vw, 80px); line-height: 1.05; margin: 8px 0; }
   .sent .mail { font-weight: 700; color: var(--ink); word-break: break-all; }
+  .sent .code { margin-top: 10px; font-size: clamp(16px, 1.4vw, 26px); color: var(--ink); }
+  .sent .code b { font-family: Consolas, Menlo, monospace; letter-spacing: 4px; background: #fff3c4; padding: 4px 12px; border-radius: 8px; margin-left: 6px; }
   .staff { position: fixed; inset: auto 20px 20px auto; z-index: 30; background: #fff; color: var(--ink); border-radius: 16px; padding: 18px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.5); display: none; font-size: 18px; }
   .staff.open { display: block; }
   .staff .btn { font-size: 16px; padding: 10px 18px; margin: 10px 8px 0 0; }
@@ -940,14 +942,14 @@
       <div class="small">Congratulations &mdash; you won</div>
       <h3 id="prize-name"></h3>
       <form class="claim" id="claim-form" novalidate>
-        <label for="claim-email">Enter your email and we'll send your e-gift card</label>
+        <label for="claim-email" id="claim-label">Enter your email to claim your gift card</label>
         <input class="email-box" id="claim-email" type="email" inputmode="none" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="you@company.com">
         <div class="err" id="claim-err"></div>
         <label class="optin"><input type="checkbox" id="claim-optin"> Also send me occasional updates from Tenant Property Protection</label>
         <div class="kb" id="kb"></div>
         <div class="actions">
           <button type="button" class="btn ghost" id="result-done">No thanks</button>
-          <button type="submit" class="btn" id="claim-send">Send my gift card</button>
+          <button type="submit" class="btn" id="claim-send">Claim my gift card</button>
         </div>
       </form>
     </div>
@@ -965,9 +967,12 @@
     </div>
     <div id="sent-step" class="sent" hidden>
       <div class="small">You're all set!</div>
-      <div class="big">Check your inbox</div>
-      <p>Your <b id="sent-prize"></b> will be emailed to<br><span class="mail" id="sent-email"></span></p>
-      <p>It comes from tdelacruz@tenantpropertyprotection.com. Thanks for stopping by Booth #527!</p>
+      <div class="big" id="sent-big">Pick up your gift card</div>
+      <p id="sent-handout">Show this screen to our team at <b>Booth #527</b> and we'll hand you your <b class="sent-prize"></b>.<br>
+        A confirmation is on its way to <span class="mail sent-email"></span></p>
+      <p id="sent-emailed" hidden>Your <b class="sent-prize"></b> will be emailed to<br><span class="mail sent-email"></span></p>
+      <div class="code" id="sent-code">Claim code <b></b></div>
+      <p>The email comes from tdelacruz@tenantpropertyprotection.com. Thanks for stopping by Booth #527!</p>
       <div class="actions"><button type="button" class="btn" id="sent-done">Done</button></div>
     </div>
   </div>
@@ -980,6 +985,9 @@
     <input id="staff-key" type="text" autocomplete="off" style="width:140px;font-size:18px;padding:4px 8px;text-transform:uppercase"> <button class="btn" id="staff-key-save">Save</button></label>
   <label style="display:block;margin-top:10px">Gift card limit on this kiosk:
     <input id="staff-limit" type="number" min="0" step="1" style="width:90px;font-size:18px;padding:4px 8px"> <button class="btn" id="staff-limit-save">Save</button></label>
+  <label style="display:block;margin-top:10px" id="staff-brands-row">Gift card brands at the booth (the mystery boxes pick from these):
+    <input id="staff-brands" type="text" autocomplete="off" style="width:460px;max-width:90vw;font-size:16px;padding:4px 8px" placeholder="Starbucks, Chipotle, Amazon"> <button class="btn" id="staff-brands-save">Save</button></label>
+  <div style="margin-top:10px">Leads (every email entered, for the CRM): <b>teond1090.github.io/tpp-gift-cards/leads.html</b> (needs the kiosk key)</div>
   <button class="btn" id="staff-csv">Download CSV</button>
   <button class="btn" id="staff-retry">Retry sending</button>
   <button class="btn" id="staff-close">Close</button>
@@ -1283,7 +1291,9 @@
   // ---------------- Prize wheel: press & hold to power up, release to spin ----------------
   // Edit prizes here (user, 2026-10-20). Wheel order = slice order. Gift cards share 20% (the best prize, limited
   // stock); booth handouts + Try Again share the other 80%.
-  //   kind "gift"    -> email form, e-gift card (counts toward the kiosk's gift card limit, set in the #staff panel)
+  //   kind "gift"    -> email form, then the card (counts toward the kiosk's gift card limit, set in the #staff panel).
+  //                     2026-10-26: cards are handed out at the booth (DELIVERY "handout"); the email is the pick-up
+  //                     confirmation + lead. DELIVERY "email" = the e-gift card flow from the inventory tab.
   //   kind "handout" -> no email: show this screen at the booth (with a claim code)
   //   kind "retry"   -> one free re-spin per visitor (the re-spin can't land on Try Again)
   // Chance per prize TYPE (%); each type's chance is split evenly over its slices, so adding slices never changes the odds.
@@ -1312,6 +1322,20 @@
   // Gift card stock from the prize sheet's "Gift Card Inventory" tab (physical cards emailed as e-gift cards, 2026-10-21):
   // the mystery boxes only offer brands that are in stock. null = unknown (offline / old endpoint): offer every brand.
   let STOCK = null;
+  // How gift cards reach winners: follows the prize script (Script Property GIFT_DELIVERY via ?stock=1 -> _delivery).
+  // "handout" (default): physical cards at the booth; "email": e-gift cards from the inventory tab.
+  let DELIVERY = "handout";
+  const BOOTH_BRANDS_KEY = "tpp-booth-brands";                        // staff panel: brands physically at the booth
+  const boothBrands = () => { const v = lsGet(BOOTH_BRANDS_KEY, null); const l = Array.isArray(v) ? v.filter(b => GIFT_BRANDS.includes(b)) : []; return l.length ? l : GIFT_BRANDS; };
+  function applyDelivery() {
+    const h = DELIVERY === "handout";
+    document.getElementById("claim-label").textContent = h ? "Enter your email to claim your gift card" : "Enter your email and we'll send your e-gift card";
+    document.getElementById("claim-send").textContent = h ? "Claim my gift card" : "Send my gift card";
+    document.getElementById("sent-big").textContent = h ? "Pick up your gift card" : "Check your inbox";
+    document.getElementById("sent-handout").hidden = !h;
+    document.getElementById("sent-emailed").hidden = h;
+    document.getElementById("sent-code").hidden = !h;
+  }
   async function loadStock() {
     try {
       const r = await fetch(PRIZE_ENDPOINT + "?stock=1&t=" + Date.now());
@@ -1320,6 +1344,7 @@
       // a test spin armed remotely in the prize script (armTestSpin): rig the next spin once
       if (j && j._test && !lsGet(TEST_KEY, "") && !testBrand) lsSet(TEST_KEY, String(j._test));
       if (j && typeof j === "object") STOCK = Object.fromEntries(Object.entries(j).filter(([b]) => GIFT_BRANDS.includes(b)));
+      if (j && j._delivery) { DELIVERY = j._delivery === "email" ? "email" : "handout"; applyDelivery(); }
     } catch (e) { /* keep the last known stock */ }
   }
   const stockTotal = () => STOCK ? Object.values(STOCK).reduce((a, b) => a + b, 0) : Infinity;
@@ -1513,7 +1538,7 @@
   }
   function pickPrize() {
     // gift cards drop out once the kiosk's limit is reached; the free re-spin can't land on Try Again
-    const w = PRIZES.map(p => (p.kind === "gift" && (giftsLeft() <= 0 || stockTotal() <= 0)) || (p.kind === "retry" && retryUsed) ? 0 : p.weight);
+    const w = PRIZES.map(p => (p.kind === "gift" && (giftsLeft() <= 0 || (DELIVERY !== "handout" && stockTotal() <= 0))) || (p.kind === "retry" && retryUsed) ? 0 : p.weight);
     const total = w.reduce((sum, x) => sum + x, 0);
     let r = Math.random() * total;
     for (let i = 0; i < PRIZES.length; i++) { r -= w[i]; if (r <= 0 && w[i] > 0) return i; }
@@ -1593,7 +1618,8 @@
   function startPick() {
     const all = GIFT_BRANDS;
     let pool = all;
-    if (STOCK) {                                                        // one entry per card in stock
+    if (DELIVERY === "handout") pool = boothBrands();                   // physical cards at the booth (staff panel list)
+    else if (STOCK) {                                                   // one entry per card in stock
       pool = [];
       Object.entries(STOCK).forEach(([b, n]) => { for (let k = 0; k < n; k++) pool.push(b); });
       if (!pool.length) pool = all;
@@ -1744,7 +1770,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-10-23a";
+  const BUILD = "2026-10-26a";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
@@ -1787,8 +1813,9 @@
     };
     list.push(entry); saveEntries(list);
     document.getElementById("claim-send").disabled = true;
-    document.getElementById("sent-prize").textContent = wonPrize;
-    document.getElementById("sent-email").textContent = email;
+    document.querySelectorAll(".sent-prize").forEach(x => x.textContent = wonPrize);
+    document.querySelectorAll(".sent-email").forEach(x => x.textContent = email);
+    document.querySelector("#sent-code b").textContent = entry.id.replace(/[^0-9a-z]/gi, "").slice(-6).toUpperCase();   // matches the email + sheet
     claimStep.hidden = true; sentStep.hidden = false;
     flushEntries();
   });
@@ -1833,12 +1860,16 @@
     document.getElementById("staff-stats").innerHTML =
       list.length + " gift card emails, " + pending + " waiting to send" + (PRIZE_ENDPOINT ? "" : " (no endpoint set)") +
       "<br>Gift cards won: " + lsGet(GIFT_WINS_KEY, 0) + " of " + lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) + " (" + giftsLeft() + " left)" +
+      "<br>Gift card delivery: " + (DELIVERY === "handout" ? "<b>handed out at the booth</b> (physical cards; the email is the pick-up confirmation)" : "<b>e-gift card by email</b> (from the inventory tab)") +
       "<br>Handouts: " + (Object.entries(by).map(([k, v]) => k + " " + v).join(", ") || "none yet");
     document.getElementById("staff-limit").value = lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT);
     document.getElementById("staff-key").value = lsGet(KEY_KEY, "");
-    document.getElementById("staff-stats").innerHTML += "<br>E-gift cards in stock: " +
-      (STOCK ? (Object.entries(STOCK).map(([k, v]) => k.replace(" Gift Card", "") + " " + v).join(", ") || "none") : "unknown") +
-      (lsGet(KEY_KEY, "") ? "" : "<br><b style='color:#c3202a'>No kiosk key set: gift cards won't be emailed automatically.</b>");
+    document.getElementById("staff-brands").value = boothBrands().map(b => b.replace(" Gift Card", "")).join(", ");
+    document.getElementById("staff-brands-row").hidden = DELIVERY !== "handout";
+    if (DELIVERY === "handout") document.getElementById("staff-stats").innerHTML += "<br>Mystery boxes pick from: " + boothBrands().map(b => b.replace(" Gift Card", "")).join(", ");
+    else document.getElementById("staff-stats").innerHTML += "<br>E-gift cards in stock: " +
+      (STOCK ? (Object.entries(STOCK).map(([k, v]) => k.replace(" Gift Card", "") + " " + v).join(", ") || "none") : "unknown");
+    if (!lsGet(KEY_KEY, "")) document.getElementById("staff-stats").innerHTML += "<br><b style='color:#c3202a'>No kiosk key set: wins are flagged NEEDS REVIEW in the sheet" + (DELIVERY === "handout" ? "." : " and gift cards won't be emailed automatically.") + "</b>";
   }
   document.getElementById("staff-csv").addEventListener("click", () => {
     const rows = [["time", "email", "prize", "marketing_opt_in", "kiosk", "sent"]]
@@ -1852,6 +1883,12 @@
   document.getElementById("staff-retry").addEventListener("click", flushEntries);
   document.getElementById("staff-key-save").addEventListener("click", () => {
     lsSet(KEY_KEY, document.getElementById("staff-key").value.trim().toUpperCase()); renderStaff();
+  });
+  document.getElementById("staff-brands-save").addEventListener("click", () => {
+    const norm = x => x.toLowerCase().replace(/ gift card/g, "").replace(/[^a-z0-9]/g, "");
+    const want = document.getElementById("staff-brands").value.split(/[,\n;]+/).map(norm).filter(Boolean);
+    const list = GIFT_BRANDS.filter(b => want.includes(norm(b)));
+    lsSet(BOOTH_BRANDS_KEY, list.length ? list : null); renderStaff();
   });
   document.getElementById("staff-limit-save").addEventListener("click", () => {
     const v = Math.max(0, parseInt(document.getElementById("staff-limit").value, 10) || 0);
