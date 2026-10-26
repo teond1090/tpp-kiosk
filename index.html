@@ -240,6 +240,8 @@
   .lb { position: absolute; left: 0; right: 0; height: 9vh; background: #000; z-index: 4; pointer-events: none; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
   .lb.top { top: 0; transform: translateY(-100%); } .lb.bot { bottom: 0; transform: translateY(100%); }
   .wheel-screen.cine .lb { transform: none; }
+  /* the wheel and its pointer stay in front of the bars (user, 2026-10-26: the top bar was hiding the pointer mid-spin) */
+  .wheel-screen > .wheel-wrap { z-index: 5; }
   /* god rays rotating behind the wheel */
   .rays { position: absolute; inset: -32%; border-radius: 50%; pointer-events: none; z-index: -1; opacity: .35;
     background: repeating-conic-gradient(from 0deg, rgba(255,214,120,.55) 0 5deg, transparent 5deg 15deg);
@@ -255,7 +257,7 @@
   .wheel-screen.cine .wheel-wrap::before { opacity: 1; }
   .wheel-screen.cine .wheel-side, .wheel-screen.cine .wheel-left { opacity: .22; }
   .wheel-side { transition: opacity .6s ease; }
-  .wheel-screen.closeup .wheel-wrap { transform-origin: 50% 3%; transform: scale(1.5); transition: transform 1.8s cubic-bezier(.3,.7,.2,1); }
+  .wheel-screen.closeup .wheel-wrap { transform-origin: 50% 0%; transform: scale(1.45); transition: transform 1.8s cubic-bezier(.3,.7,.2,1); }   /* origin at the very top: the pointer never leaves the screen */
   .wheel-screen.impact .wheel-wrap { animation: impact .5s ease-out; }
   @keyframes impact { 15% { translate: -10px 5px; } 35% { translate: 9px -6px; } 55% { translate: -5px 4px; } 75% { translate: 3px -2px; } 100% { translate: 0 0; } }
   .impact-ring { position: absolute; left: 50%; top: 2%; width: 12%; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%; pointer-events: none; z-index: 3;
@@ -1766,7 +1768,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-10-26b";
+  const BUILD = "2026-10-26c";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
