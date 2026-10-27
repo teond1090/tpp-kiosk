@@ -993,6 +993,10 @@
     <input id="staff-key" type="text" autocomplete="off" style="width:140px;font-size:18px;padding:4px 8px;text-transform:uppercase"> <button class="btn" id="staff-key-save">Save</button></label>
   <label style="display:block;margin-top:10px">Gift card limit on this kiosk:
     <input id="staff-limit" type="number" min="0" step="1" style="width:90px;font-size:18px;padding:4px 8px"> <button class="btn" id="staff-limit-save">Save</button></label>
+  <label style="display:block;margin-top:10px" id="staff-session-row">Session (paces the gift cards over the day): starts at
+    <input id="staff-start" type="time" style="font-size:18px;padding:4px 8px"> length
+    <input id="staff-mins" type="number" min="30" step="15" style="width:80px;font-size:18px;padding:4px 8px"> min
+    <button class="btn" id="staff-session-save">Save</button> <button class="btn" id="staff-session-now">Start now</button></label>
   <label style="display:block;margin-top:10px" id="staff-brands-row">Gift card brands at the booth (the mystery boxes pick from these):
     <input id="staff-brands" type="text" autocomplete="off" style="width:460px;max-width:90vw;font-size:16px;padding:4px 8px" placeholder="Starbucks, Chipotle, Amazon"> <button class="btn" id="staff-brands-save">Save</button></label>
   <div style="margin-top:10px">Leads (every email entered, for the CRM): <b>teond1090.github.io/tpp-gift-cards/leads.html</b> (needs the kiosk key)</div>
@@ -1305,7 +1309,7 @@
   //   kind "handout" -> no email: show this screen at the booth (with a claim code)
   //   kind "retry"   -> one free re-spin per visitor (the re-spin can't land on Try Again)
   // Chance per prize TYPE (%); each type's chance is split evenly over its slices, so adding slices never changes the odds.
-  const ODDS = { gift: 50, pen: 16, koozie: 14, wine: 6, retry: 14 };   // user 2026-10-20: gift cards 50% "for now" (was 20/26/22/10/22)
+  const ODDS = { gift: 10, pen: 16, koozie: 14, wine: 6, retry: 14 };   // user 2026-10-27: gift cards 1 in 10 (base; paced by giftChance() at the booth)
   // gift slices don't name a brand (user, 2026-10-20): the brand is chosen in the mystery-box pick that follows
   const GIFT = (label, top, color, text) => ({ label, top: "GIFT CARD", sub: "MYSTERY BOX", kind: "gift", type: "gift", color, text });
   const PEN = { label: "TPP Pen", top: "TPP PEN", sub: "BOOTH PRIZE", kind: "handout", type: "pen", color: "#f2b632", text: "#1a1a1f" };   // gold
@@ -1324,8 +1328,7 @@
   ].map(p => Object.assign({}, p));
   PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
   // every gift card brand a mystery box can hold (the wheel's slices just say GIFT CARD); in-stock brands win when known
-  const GIFT_BRANDS = ["Amazon", "Visa", "Mastercard", "American Express", "Starbucks", "Chick-fil-A", "Chipotle", "Domino's",
-                       "Olive Garden", "Panera", "Subway"].map(b => b + " Gift Card");
+  const GIFT_BRANDS = ["Amazon", "Visa", "AMEX"].map(b => b + " Gift Card");   // user 2026-10-27: only the cards on the list
   const GIFT_LIMIT_KEY = "tpp-gift-limit", GIFT_WINS_KEY = "tpp-gift-wins", HANDOUT_KEY = "tpp-handouts", KEY_KEY = "tpp-kiosk-key";
   // Gift card stock from the prize sheet's "Gift Card Inventory" tab (physical cards emailed as e-gift cards, 2026-10-21):
   // the mystery boxes only offer brands that are in stock. null = unknown (offline / old endpoint): offer every brand.
@@ -1333,6 +1336,10 @@
   // How gift cards reach winners: follows the prize script (Script Property GIFT_DELIVERY via ?stock=1 -> _delivery).
   // "handout" (default): physical cards at the booth; "email": e-gift cards from the inventory tab.
   let DELIVERY = "handout";
+  // Booth cards (2026-10-27): today's physical cards from the sheet's "Booth Cards" tab (?stock=1 -> _booth):
+  // { day, total, won, left, available: [{ n, brand, amount }] }. null = unknown (offline): brands only, plain odds.
+  let BOOTH = null;
+  const SESSION_KEY = "tpp-session";                                   // { start: "HH:MM", mins: 180 } from the #staff panel
   const BOOTH_BRANDS_KEY = "tpp-booth-brands";                        // staff panel: brands physically at the booth
   const boothBrands = () => { const v = lsGet(BOOTH_BRANDS_KEY, null); const l = Array.isArray(v) ? v.filter(b => GIFT_BRANDS.includes(b)) : []; return l.length ? l : GIFT_BRANDS; };
   function applyDelivery() {
@@ -1347,10 +1354,10 @@
     try {
       const r = await fetch(PRIZE_ENDPOINT + "?stock=1&t=" + Date.now());
       const j = await r.json();
-      // only brands the kiosk offers (e.g. a Five Guys test card in the sheet never shows up here)
+      // only brands the kiosk offers (a test card in the sheet never shows up here)
       // a test spin armed remotely in the prize script (armTestSpin): rig the next spin once
       if (j && j._test && !lsGet(TEST_KEY, "") && !testBrand) lsSet(TEST_KEY, String(j._test));
-      if (j && typeof j === "object") STOCK = Object.fromEntries(Object.entries(j).filter(([b]) => GIFT_BRANDS.includes(b)));
+      if (j && typeof j === "object") { STOCK = Object.fromEntries(Object.entries(j).filter(([b]) => GIFT_BRANDS.includes(b))); BOOTH = j._booth || null; }
       if (j && j._delivery) { DELIVERY = j._delivery === "email" ? "email" : "handout"; applyDelivery(); }
     } catch (e) { /* keep the last known stock */ }
   }
@@ -1543,9 +1550,29 @@
     holdBtn.classList.remove("holding"); holdLbl.innerHTML = retryUsed ? "Hold to<br>spin again" : "Hold<br>to spin"; powerTxt.textContent = "";
     holdBtn.disabled = spinning;
   }
+  // Gift card chance on the next spin, in % (user, 2026-10-27): 1 in 10 as the base. At the booth it is paced against the
+  // session: the day's cards (BOOTH.total = 12) should go out evenly over the session (#staff: start time + length).
+  // Behind pace -> the chance climbs (+8 points per card behind, up to 50%); ahead -> it drops (down to 3%); session over
+  // with cards left -> 50%; the day's cards all gone -> 0 (the wheel only lands on booth prizes).
+  function giftChance() {
+    if (DELIVERY !== "handout") return (giftsLeft() <= 0 || stockTotal() <= 0) ? 0 : ODDS.gift;
+    if (!BOOTH) return giftsLeft() <= 0 ? 0 : ODDS.gift;             // sheet unreachable: plain odds + this kiosk's limit
+    if (BOOTH.left <= 0) return 0;
+    const ses = lsGet(SESSION_KEY, null), m = ses && /^(\d{1,2}):(\d{2})$/.exec(ses.start || "");
+    if (!m) return ODDS.gift;                                          // no session start set: flat 1 in 10
+    const start = new Date(); start.setHours(+m[1], +m[2], 0, 0);
+    const mins = +ses.mins || 180, elapsed = (Date.now() - start) / 60000;
+    if (elapsed < 0) return ODDS.gift;
+    if (elapsed >= mins) return 50;
+    const diff = BOOTH.total * elapsed / mins - BOOTH.won;             // cards behind (+) or ahead (-) of an even pace
+    const c = diff >= 0 ? ODDS.gift + 8 * diff : ODDS.gift / (1 - diff);
+    return Math.max(3, Math.min(50, Math.round(c * 10) / 10));
+  }
   function pickPrize() {
-    // gift cards drop out once the kiosk's limit is reached; the free re-spin can't land on Try Again
-    const w = PRIZES.map(p => (p.kind === "gift" && (giftsLeft() <= 0 || (DELIVERY !== "handout" && stockTotal() <= 0))) || (p.kind === "retry" && retryUsed) ? 0 : p.weight);
+    // the gift slices share giftChance(); the other prize types keep their relative odds; the free re-spin can't land on Try Again
+    const g = giftChance(), rest = PRIZES.filter(p => p.kind !== "gift").reduce((a, p) => a + p.weight, 0);
+    const w = PRIZES.map(p => p.kind === "gift" ? g / PRIZES.filter(q => q.kind === "gift").length
+      : (p.kind === "retry" && retryUsed) ? 0 : p.weight * (100 - g) / rest);
     const total = w.reduce((sum, x) => sum + x, 0);
     let r = Math.random() * total;
     for (let i = 0; i < PRIZES.length; i++) { r -= w[i]; if (r <= 0 && w[i] > 0) return i; }
@@ -1619,30 +1646,29 @@
   }
   function hideSteps() { ["pick-step", "claim-step", "handout-step", "retry-step", "sent-step"].forEach(id => document.getElementById(id).hidden = true); }
   // Gift card win (user, 2026-10-20): three wrapped mystery boxes, each hiding a different gift card; the one they open is theirs.
-  // ---- one-time staff test spin: #testspin=<brand> (e.g. fiveguys); cleared as soon as that spin lands
+  // ---- one-time staff test spin: #testspin=<brand> (e.g. test); cleared as soon as that spin lands
   const TEST_KEY = "tpp-test-spin";
   let testBrand = "";                                                   // the brand for the current test result + claim
   function startPick() {
-    const all = GIFT_BRANDS;
-    let pool = all;
-    if (DELIVERY === "handout") pool = boothBrands();                   // physical cards at the booth (staff panel list)
-    else if (STOCK) {                                                   // one entry per card in stock
-      pool = [];
-      Object.entries(STOCK).forEach(([b, n]) => { for (let k = 0; k < n; k++) pool.push(b); });
-      if (!pool.length) pool = all;
-    }
+    // pool entries: { brand, amount, n } = one specific booth card (2026-10-27), or { brand } = brand only (e-gift stock / offline)
+    let pool = [];
+    if (DELIVERY === "handout" && BOOTH && BOOTH.available.length) pool = BOOTH.available.map(c => ({ brand: String(c.brand).replace(/ gift card/i, "") + " Gift Card", amount: +c.amount || 0, n: c.n }));
+    else if (DELIVERY === "handout") pool = boothBrands().map(b => ({ brand: b }));
+    else if (STOCK) Object.entries(STOCK).forEach(([b, n]) => { for (let k = 0; k < n; k++) pool.push({ brand: b }); });
+    if (!pool.length) pool = GIFT_BRANDS.map(b => ({ brand: b }));
     pool = pool.sort(() => Math.random() - 0.5);
-    const distinct = [...new Set(pool)];
-    const brands = testBrand ? [testBrand, testBrand, testBrand]
+    const key = c => c.n ? "#" + c.n : c.brand, seen = new Set();
+    const distinct = pool.filter(c => !seen.has(key(c)) && seen.add(key(c)));
+    const cards = testBrand ? [1, 2, 3].map(() => ({ brand: testBrand }))
       : distinct.length >= 3 ? distinct.slice(0, 3) : [0, 1, 2].map(k => distinct[k % distinct.length]);
+    const name = c => (c.amount ? "$" + c.amount + " " : "") + c.brand.replace(" Gift Card", "");
     const wrap = document.getElementById("boxes"), claim = document.getElementById("pick-claim");
     wrap.innerHTML = ""; claim.hidden = true; delete wrap.dataset.picked;
     document.getElementById("pick-h").textContent = "Tap a box to open it!";
-    brands.forEach(b => {
+    cards.forEach(c => {
       const el = document.createElement("button");
       el.type = "button"; el.className = "gbox";
-      el.innerHTML = '<span class="lid"></span><span class="body"></span><span class="q">?</span><span class="reveal">' +
-        b.replace(" Gift Card", "") + "<small>GIFT CARD</small></span>";
+      el.innerHTML = '<span class="lid"></span><span class="body"></span><span class="q">?</span><span class="reveal">' + name(c) + "<small>GIFT CARD</small></span>";
       el.addEventListener("click", () => {
         if (wrap.dataset.picked) return;
         wrap.dataset.picked = "1";
@@ -1651,12 +1677,13 @@
         for (let k = 0; k < 9; k++) tone(180 + k * 25, k * 0.07, 0.05, "square", 0.08);   // drumroll
         setTimeout(() => {
           el.classList.remove("shake"); el.classList.add("open", "mine");
-          wonPrize = b;
-          if (STOCK && STOCK[b]) STOCK[b]--;
+          wonPrize = c.brand; wonAmount = c.amount || 0; wonCard = c.n || 0;
+          if (STOCK && STOCK[c.brand]) STOCK[c.brand]--;
+          if (c.n && BOOTH) { BOOTH.available = BOOTH.available.filter(x => x.n !== c.n); BOOTH.left = Math.max(0, BOOTH.left - 1); BOOTH.won++; }   // until the next poll
           fanfare(); confetti(260, ["#ffd166", "#ffe9a8", "#ffffff", "#e2343e", "#c8961a"]);
-          document.getElementById("pick-h").textContent = "You got " + b.replace(" Gift Card", "") + "!";
+          document.getElementById("pick-h").textContent = "You got " + name(c) + "!";
           setTimeout(() => { [...wrap.children].filter(x => x !== el).forEach(x => x.classList.add("open", "other")); }, 900);
-          setTimeout(() => { claim.textContent = "Claim my " + b; claim.hidden = false; }, 1600);
+          setTimeout(() => { claim.textContent = "Claim my " + wonLabel(); claim.hidden = false; }, 1600);
         }, 700);
       });
       wrap.appendChild(el);
@@ -1664,14 +1691,14 @@
   }
   document.getElementById("pick-claim").addEventListener("click", () => {
     hideSteps();
-    document.getElementById("prize-name").textContent = wonPrize;
+    document.getElementById("prize-name").textContent = wonLabel();
     claimReset();
     document.getElementById("claim-step").hidden = false;
   });
   function showPrize(i) {
     const P = PRIZES[i];
     if (P.kind !== "retry") { sfx("shimmer", 0.7); wheelScreen.classList.add("win"); setTimeout(() => wheelScreen.classList.remove("win"), 4000); }
-    wonPrize = P.label;
+    wonPrize = P.label; wonAmount = 0; wonCard = 0;
     hideSteps();
     result.classList.remove("jackpot");
     if (P.kind === "retry") {
@@ -1740,7 +1767,8 @@
   const PRIZE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxIFtva6IDLTqA2IYSAWJYaQz-RvYRuhVq2w3sPz9-hkGot22SonW3y-mH5bS3_QWdF/exec";
   const KIOSK_NAME = "MSM Atlanta - Booth 527";
   const STORE = "tpp-prize-entries";
-  let wonPrize = "";
+  let wonPrize = "", wonAmount = 0, wonCard = 0;                        // brand, $ amount and booth card # (0 = brand only)
+  const wonLabel = () => (wonAmount ? "$" + wonAmount + " " : "") + wonPrize;
   const emailEl = document.getElementById("claim-email");
   const errEl = document.getElementById("claim-err");
   const claimStep = document.getElementById("claim-step"), sentStep = document.getElementById("sent-step");
@@ -1756,6 +1784,7 @@
       const body = new URLSearchParams({
         email: entry.email, prize: entry.prize, marketing_opt_in: entry.marketing_opt_in ? "Yes" : "No",
         kiosk: entry.kiosk, time: entry.time, id: entry.id, key: lsGet(KEY_KEY, ""), test: entry.test ? "1" : "", who: entry.who || "",
+        amount: entry.amount || "", card: entry.card || "",             // the booth card the boxes showed (2026-10-27)
       });
       await fetch(PRIZE_ENDPOINT, { method: "POST", mode: "no-cors", body });
       return true;
@@ -1777,7 +1806,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-10-27b";
+  const BUILD = "2026-10-27c";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
@@ -1815,14 +1844,14 @@
     const dupe = list.find(x => x.email === email);
     if (dupe && !testBrand) { errEl.textContent = "This email already has a prize: " + dupe.prize + ". One gift card per person."; return; }
     const entry = {
-      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email, prize: wonPrize,
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email, prize: wonPrize, amount: wonAmount, card: wonCard,
       marketing_opt_in: document.getElementById("claim-optin").checked,
       who: [document.getElementById("claim-owner").checked && "Owner", document.getElementById("claim-vendor").checked && "Vendor"].filter(Boolean).join(", "),
       kiosk: KIOSK_NAME, time: new Date().toISOString(), sent: null, test: !!testBrand,
     };
     list.push(entry); saveEntries(list);
     document.getElementById("claim-send").disabled = true;
-    document.querySelectorAll(".sent-prize").forEach(x => x.textContent = wonPrize);
+    document.querySelectorAll(".sent-prize").forEach(x => x.textContent = wonLabel());
     document.querySelectorAll(".sent-email").forEach(x => x.textContent = email);
     claimStep.hidden = true; sentStep.hidden = false;
     flushEntries();
@@ -1873,8 +1902,15 @@
     document.getElementById("staff-limit").value = lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT);
     document.getElementById("staff-key").value = lsGet(KEY_KEY, "");
     document.getElementById("staff-brands").value = boothBrands().map(b => b.replace(" Gift Card", "")).join(", ");
-    document.getElementById("staff-brands-row").hidden = DELIVERY !== "handout";
-    if (DELIVERY === "handout") document.getElementById("staff-stats").innerHTML += "<br>Mystery boxes pick from: " + boothBrands().map(b => b.replace(" Gift Card", "")).join(", ");
+    document.getElementById("staff-brands-row").hidden = DELIVERY !== "handout" || !!BOOTH;
+    document.getElementById("staff-session-row").hidden = DELIVERY !== "handout";
+    const ses = lsGet(SESSION_KEY, null) || {};
+    document.getElementById("staff-start").value = ses.start || ""; document.getElementById("staff-mins").value = ses.mins || 180;
+    if (DELIVERY === "handout" && BOOTH) document.getElementById("staff-stats").innerHTML +=
+      "<br>Booth cards, day " + BOOTH.day + " (switch the day on the leads page): <b>" + BOOTH.left + " of " + BOOTH.total + " left</b>, " + BOOTH.won + " won" +
+      "<br>Gift card chance on the next spin: <b>" + giftChance() + "%</b>" + (ses.start ? " (session " + ses.start + ", " + (ses.mins || 180) + " min)" : " (no session start set: flat 1 in 10)") +
+      "<br>Mystery boxes pick from: " + (BOOTH.available.map(c => "$" + c.amount + " " + String(c.brand).replace(/ gift card/i, "")).join(", ") || "none left today");
+    else if (DELIVERY === "handout") document.getElementById("staff-stats").innerHTML += "<br>Mystery boxes pick from: " + boothBrands().map(b => b.replace(" Gift Card", "")).join(", ") + " (prize sheet not reachable)";
     else document.getElementById("staff-stats").innerHTML += "<br>E-gift cards in stock: " +
       (STOCK ? (Object.entries(STOCK).map(([k, v]) => k.replace(" Gift Card", "") + " " + v).join(", ") || "none") : "unknown");
     if (!lsGet(KEY_KEY, "")) document.getElementById("staff-stats").innerHTML += "<br><b style='color:#c3202a'>No kiosk key set: wins are flagged NEEDS REVIEW in the sheet" + (DELIVERY === "handout" ? "." : " and gift cards won't be emailed automatically.") + "</b>";
@@ -1897,6 +1933,13 @@
     const want = document.getElementById("staff-brands").value.split(/[,\n;]+/).map(norm).filter(Boolean);
     const list = GIFT_BRANDS.filter(b => want.includes(norm(b)));
     lsSet(BOOTH_BRANDS_KEY, list.length ? list : null); renderStaff();
+  });
+  document.getElementById("staff-session-save").addEventListener("click", () => {
+    lsSet(SESSION_KEY, { start: document.getElementById("staff-start").value, mins: Math.max(30, parseInt(document.getElementById("staff-mins").value, 10) || 180) }); renderStaff();
+  });
+  document.getElementById("staff-session-now").addEventListener("click", () => {
+    const d = new Date(), hh = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    lsSet(SESSION_KEY, { start: hh, mins: Math.max(30, parseInt(document.getElementById("staff-mins").value, 10) || 180) }); renderStaff();
   });
   document.getElementById("staff-limit-save").addEventListener("click", () => {
     const v = Math.max(0, parseInt(document.getElementById("staff-limit").value, 10) || 0);
@@ -2046,7 +2089,7 @@
   document.addEventListener("fullscreenchange", syncFs);
   document.addEventListener("webkitfullscreenchange", syncFs);
 
-  // staff setup links (hash, never sent to a server): #key=XXXXXXXX saves the kiosk key; #testspin=fiveguys rigs the next
+  // staff setup links (hash, never sent to a server): #key=XXXXXXXX saves the kiosk key; #testspin=test rigs the next
   // spin once and opens the wheel; both can be combined: #key=XXXXXXXX&testspin=fiveguys. Add ?fresh=<anything> to the
   // address so a kiosk that cached an older page loads this one.
   { const h = new URLSearchParams(location.hash.slice(1));
@@ -2056,7 +2099,7 @@
       let toWheel = false;
       if (t) {
         const want = t.toLowerCase().replace(/[^a-z]/g, "");
-        const brand = GIFT_BRANDS.concat(["Five Guys Gift Card"]).find(b => b.toLowerCase().replace(/[^a-z]/g, "").startsWith(want)) || "";
+        const brand = GIFT_BRANDS.concat(["TPP Test Gift Card"]).find(b => b.toLowerCase().replace(/[^a-z]/g, "").startsWith(want)) || "";
         if (brand) { lsSet(TEST_KEY, brand); toWheel = true; }
       }
       history.replaceState(null, "", location.pathname + (toWheel ? "#wheel" : ""));
