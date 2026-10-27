@@ -376,11 +376,13 @@
   .email-box.bad { border-color: #e2343e; animation: shake .3s; }
   @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
   .claim .err { color: #c3202a; min-height: 1.3em; font-size: clamp(14px, 1.2vw, 22px); margin-top: 6px; }
-  .optin { display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 6px; color: var(--muted); font-size: clamp(14px, 1.2vw, 22px); cursor: pointer; }
-  .optin input { width: 28px; height: 28px; accent-color: var(--red); }
-  .who { display: flex; gap: 22px; align-items: center; justify-content: center; margin-top: 8px; color: var(--muted); font-size: clamp(14px, 1.2vw, 22px); flex-wrap: wrap; }
-  .who label { display: flex; gap: 10px; align-items: center; cursor: pointer; }
-  .who input { width: 28px; height: 28px; accent-color: var(--red); }
+  /* opt-in + Owner / Vendor: one aligned block of tappable cards, same width as the email box (user, 2026-10-27) */
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .claim .choice { display: flex; align-items: center; gap: 14px; margin: 0; padding: 10px 16px; border: 2px solid #d5d5dc; border-radius: 14px; background: #f7f7f9;
+    color: var(--ink); font-weight: 600; font-size: clamp(14px, 1.2vw, 22px); line-height: 1.2; text-align: left; cursor: pointer; user-select: none; }
+  .claim .choice.wide { grid-column: 1 / -1; }
+  .claim .choice input { width: 26px; height: 26px; flex: 0 0 auto; margin: 0; accent-color: var(--red); }
+  .claim .choice:has(input:checked) { border-color: var(--red); background: #fff; }
   .kb { margin-top: clamp(10px, 1.6vh, 20px); display: grid; gap: 8px; user-select: none; }
   .kb .row { display: flex; gap: 8px; justify-content: center; }
   .kb button {
@@ -948,10 +950,10 @@
         <label for="claim-email" id="claim-label">Enter your email to claim your gift card</label>
         <input class="email-box" id="claim-email" type="email" inputmode="none" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="you@company.com">
         <div class="err" id="claim-err"></div>
-        <label class="optin"><input type="checkbox" id="claim-optin"> Also send me occasional updates from Tenant Property Protection</label>
-        <div class="who">I am a&hellip;
-          <label><input type="checkbox" id="claim-owner"> Owner / Operator</label>
-          <label><input type="checkbox" id="claim-vendor"> Vendor</label>
+        <div class="choices">
+          <label class="choice wide"><input type="checkbox" id="claim-optin"><span>Send me occasional updates from Tenant Property Protection</span></label>
+          <label class="choice"><input type="checkbox" id="claim-owner"><span>I&rsquo;m an Owner / Operator</span></label>
+          <label class="choice"><input type="checkbox" id="claim-vendor"><span>I&rsquo;m a Vendor</span></label>
         </div>
         <div class="kb" id="kb"></div>
         <div class="actions">
@@ -1775,7 +1777,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-10-27a";
+  const BUILD = "2026-10-27b";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
