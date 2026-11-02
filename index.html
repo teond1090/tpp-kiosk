@@ -1313,7 +1313,7 @@
   //   kind "handout" -> no email: show this screen at the booth (with a claim code)
   //   kind "retry"   -> one free re-spin per visitor (the re-spin can't land on Try Again)
   // Chance per prize TYPE (%); each type's chance is split evenly over its slices, so adding slices never changes the odds.
-  const ODDS = { gift: 15, pen: 5, koozie: 22, wine: 7, retry: 29, mystery: 22 };   // user 2026-11-02: pens 5%, the other 95% split in proportion to the earlier shares (20/15/15/10/5 -> 29/22/22/15/7); gift card is the paced base
+  const ODDS = { gift: 10, pen: 29, koozie: 22, wine: 3, retry: 29, mystery: 7 };   // user 2026-11-02: pens ~29% (most stock); wine opener, gift card, mystery gift lowered; gift card is the paced base
   const WINE_LIMIT_KEY = "tpp-wine-limit", DEFAULT_WINE_LIMIT = 2;    // wine openers at the booth; 0 left -> the wheel can't land on them
   const wineLeft = () => Math.max(0, lsGet(WINE_LIMIT_KEY, DEFAULT_WINE_LIMIT) - lsGet("tpp-handouts", []).filter(h => /wine/i.test(h.prize)).length);
   const MYSTERY_LIMIT_KEY = "tpp-mystery-limit", DEFAULT_MYSTERY_LIMIT = 7;   // mystery gifts = stuffed animals (user, 2026-11-02); 0 left -> slices drop out
@@ -1817,7 +1817,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-02c";
+  const BUILD = "2026-11-02d";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
