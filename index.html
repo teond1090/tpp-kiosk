@@ -991,6 +991,8 @@
   <div id="staff-stats"></div>
   <label style="display:block;margin-top:10px">Kiosk key (from the prize sheet setup):
     <input id="staff-key" type="text" autocomplete="off" style="width:140px;font-size:18px;padding:4px 8px;text-transform:uppercase"> <button class="btn" id="staff-key-save">Save</button></label>
+  <label style="display:block;margin-top:10px">Wine openers at the booth (2 by default; the wheel stops landing on them when they're gone):
+    <input id="staff-wine" type="number" min="0" step="1" style="width:90px;font-size:18px;padding:4px 8px"> <button class="btn" id="staff-wine-save">Save</button></label>
   <label style="display:block;margin-top:10px">Gift card limit on this kiosk:
     <input id="staff-limit" type="number" min="0" step="1" style="width:90px;font-size:18px;padding:4px 8px"> <button class="btn" id="staff-limit-save">Save</button></label>
   <label style="display:block;margin-top:10px" id="staff-session-row">Session (paces the gift cards over the day): starts at
@@ -1309,7 +1311,9 @@
   //   kind "handout" -> no email: show this screen at the booth (with a claim code)
   //   kind "retry"   -> one free re-spin per visitor (the re-spin can't land on Try Again)
   // Chance per prize TYPE (%); each type's chance is split evenly over its slices, so adding slices never changes the odds.
-  const ODDS = { gift: 10, pen: 16, koozie: 14, wine: 6, retry: 14 };   // user 2026-10-27: gift cards 1 in 10 (base; paced by giftChance() at the booth)
+  const ODDS = { gift: 10, pen: 50, koozie: 15, wine: 5, retry: 20 };   // user 2026-11-02: ~100 pens, then koozies, gift cards 1 in 10 (paced), 2 wine openers
+  const WINE_LIMIT_KEY = "tpp-wine-limit", DEFAULT_WINE_LIMIT = 2;    // wine openers at the booth; 0 left -> the wheel can't land on them
+  const wineLeft = () => Math.max(0, lsGet(WINE_LIMIT_KEY, DEFAULT_WINE_LIMIT) - lsGet("tpp-handouts", []).filter(h => /wine/i.test(h.prize)).length);
   // gift slices don't name a brand (user, 2026-10-20): the brand is chosen in the mystery-box pick that follows
   const GIFT = (label, top, color, text) => ({ label, top: "GIFT CARD", sub: "MYSTERY BOX", kind: "gift", type: "gift", color, text });
   const PEN = { label: "TPP Pen", top: "TPP PEN", sub: "BOOTH PRIZE", kind: "handout", type: "pen", color: "#f2b632", text: "#1a1a1f" };   // gold
@@ -1569,10 +1573,12 @@
     return Math.max(3, Math.min(50, Math.round(c * 10) / 10));
   }
   function pickPrize() {
-    // the gift slices share giftChance(); the other prize types keep their relative odds; the free re-spin can't land on Try Again
-    const g = giftChance(), rest = PRIZES.filter(p => p.kind !== "gift").reduce((a, p) => a + p.weight, 0);
+    // the gift slices share giftChance(); the other prize types keep their relative odds; the free re-spin can't land on
+    // Try Again; wine openers drop out once the last one is handed out (user, 2026-11-02)
+    const out = p => (p.kind === "retry" && retryUsed) || (p.type === "wine" && wineLeft() <= 0);
+    const g = giftChance(), rest = PRIZES.filter(p => p.kind !== "gift" && !out(p)).reduce((a, p) => a + p.weight, 0);
     const w = PRIZES.map(p => p.kind === "gift" ? g / PRIZES.filter(q => q.kind === "gift").length
-      : (p.kind === "retry" && retryUsed) ? 0 : p.weight * (100 - g) / rest);
+      : out(p) ? 0 : p.weight * (100 - g) / rest);
     const total = w.reduce((sum, x) => sum + x, 0);
     let r = Math.random() * total;
     for (let i = 0; i < PRIZES.length; i++) { r -= w[i]; if (r <= 0 && w[i] > 0) return i; }
@@ -1806,7 +1812,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-10-27c";
+  const BUILD = "2026-11-02a";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
@@ -1898,7 +1904,10 @@
       list.length + " gift card emails, " + pending + " waiting to send" + (PRIZE_ENDPOINT ? "" : " (no endpoint set)") +
       "<br>Gift cards won: " + lsGet(GIFT_WINS_KEY, 0) + " of " + lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) + " (" + giftsLeft() + " left)" +
       "<br>Gift card delivery: " + (DELIVERY === "handout" ? "<b>handed out at the booth</b> (physical cards; the email is the pick-up confirmation)" : "<b>e-gift card by email</b> (from the inventory tab)") +
-      "<br>Handouts: " + (Object.entries(by).map(([k, v]) => k + " " + v).join(", ") || "none yet");
+      "<br>Handouts: " + (Object.entries(by).map(([k, v]) => k + " " + v).join(", ") || "none yet") +
+      "<br>Wine openers: <b>" + wineLeft() + " of " + lsGet(WINE_LIMIT_KEY, DEFAULT_WINE_LIMIT) + " left</b>" + (wineLeft() <= 0 ? " (the wheel no longer lands on them)" : "") +
+      "<br>Odds on the next spin: pen " + ODDS.pen + "%, try again " + ODDS.retry + "%, koozie " + ODDS.koozie + "%, gift card " + giftChance() + "%, wine opener " + (wineLeft() > 0 ? ODDS.wine : 0) + "% (non-gift shares scale with the gift card chance)";
+    document.getElementById("staff-wine").value = lsGet(WINE_LIMIT_KEY, DEFAULT_WINE_LIMIT);
     document.getElementById("staff-limit").value = lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT);
     document.getElementById("staff-key").value = lsGet(KEY_KEY, "");
     document.getElementById("staff-brands").value = boothBrands().map(b => b.replace(" Gift Card", "")).join(", ");
@@ -1940,6 +1949,9 @@
   document.getElementById("staff-session-now").addEventListener("click", () => {
     const d = new Date(), hh = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
     lsSet(SESSION_KEY, { start: hh, mins: Math.max(30, parseInt(document.getElementById("staff-mins").value, 10) || 180) }); renderStaff();
+  });
+  document.getElementById("staff-wine-save").addEventListener("click", () => {
+    lsSet(WINE_LIMIT_KEY, Math.max(0, parseInt(document.getElementById("staff-wine").value, 10) || 0)); renderStaff();
   });
   document.getElementById("staff-limit-save").addEventListener("click", () => {
     const v = Math.max(0, parseInt(document.getElementById("staff-limit").value, 10) || 0);
