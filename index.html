@@ -1325,15 +1325,10 @@
   const WINE = { label: "Wine Opener", top: "WINE", sub: "OPENER", kind: "handout", type: "wine", color: "#8e44ad", text: "#ffffff" };   // purple
   const RETRY = { label: "Try Again", top: "TRY", sub: "AGAIN", kind: "retry", type: "retry", color: "#8a8f9c", text: "#ffffff" };
   const MYSTERY = { label: "Mystery Gift", top: "MYSTERY", sub: "GIFT", kind: "handout", type: "mystery", color: "#1aa37a", text: "#ffffff" };   // teal; a stuffed animal at the booth
-  const PRIZES = [   // 24 slices: gift card x5, try again x6, pens & koozies x4, mystery gift x3, wine opener x2 (odds come from ODDS, not slice counts)
-    GIFT("Visa Gift Card", "VISA", "#b3202a", "#fff"), PEN, RETRY,
-    MYSTERY, KOOZIE, WINE,
-    GIFT("Starbucks Gift Card", "STARBUCKS", "#b3202a", "#fff"), PEN, RETRY,
-    GIFT("Chick-fil-A Gift Card", "CHICK-FIL-A", "#ffffff", "#1a1a1f"), KOOZIE, MYSTERY,
-    RETRY, PEN, WINE,
-    GIFT("Olive Garden Gift Card", "OLIVE GARDEN", "#ffffff", "#1a1a1f"), KOOZIE, RETRY,
-    GIFT("Panera Gift Card", "PANERA", "#b3202a", "#fff"), PEN, MYSTERY,
-    RETRY, KOOZIE, RETRY,
+  const PRIZES = [   // 14 slices (user, 2026-11-02): gift card x3, try again x4, pens, koozies & mystery gift x2, wine opener x1 (odds come from ODDS, not slice counts)
+    GIFT("Visa Gift Card", "VISA", "#b3202a", "#fff"), PEN, RETRY, MYSTERY, KOOZIE, RETRY,
+    GIFT("Amazon Gift Card", "AMAZON", "#ffffff", "#1a1a1f"), PEN, WINE, RETRY, MYSTERY,
+    GIFT("AMEX Gift Card", "AMEX", "#b3202a", "#fff"), KOOZIE, RETRY,
   ].map(p => Object.assign({}, p));
   PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
   // every gift card brand a mystery box can hold (the wheel's slices just say GIFT CARD); in-stock brands win when known
@@ -1816,7 +1811,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-02e";
+  const BUILD = "2026-11-02f";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
