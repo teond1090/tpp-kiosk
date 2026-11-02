@@ -1319,21 +1319,21 @@
   const MYSTERY_LIMIT_KEY = "tpp-mystery-limit", DEFAULT_MYSTERY_LIMIT = 7;   // mystery gifts = stuffed animals (user, 2026-11-02); 0 left -> slices drop out
   const mysteryLeft = () => Math.max(0, lsGet(MYSTERY_LIMIT_KEY, DEFAULT_MYSTERY_LIMIT) - lsGet("tpp-handouts", []).filter(h => /mystery/i.test(h.prize)).length);
   // gift slices don't name a brand (user, 2026-10-20): the brand is chosen in the mystery-box pick that follows
-  const GIFT = (label, top, color, text) => ({ label, top: "GIFT CARD", sub: "MYSTERY BOX", kind: "gift", type: "gift", color, text });
+  const GIFT = (label, top, color, text) => ({ label, top: "GIFT CARD", sub: "", kind: "gift", type: "gift", color, text });   // one line only (user, 2026-11-02)
   const PEN = { label: "TPP Pen", top: "TPP PEN", sub: "BOOTH PRIZE", kind: "handout", type: "pen", color: "#f2b632", text: "#1a1a1f" };   // gold
   const KOOZIE = { label: "TPP Koozie", top: "KOOZIE", sub: "TPP", kind: "handout", type: "koozie", color: "#2a7de1", text: "#ffffff" };   // blue
   const WINE = { label: "Wine Opener", top: "WINE", sub: "OPENER", kind: "handout", type: "wine", color: "#8e44ad", text: "#ffffff" };   // purple
   const RETRY = { label: "Try Again", top: "TRY", sub: "AGAIN", kind: "retry", type: "retry", color: "#8a8f9c", text: "#ffffff" };
   const MYSTERY = { label: "Mystery Gift", top: "MYSTERY", sub: "GIFT", kind: "handout", type: "mystery", color: "#1aa37a", text: "#ffffff" };   // teal; a stuffed animal at the booth
-  const PRIZES = [   // 24 slices: gift card x5, mystery gift x3, pens & koozies x5, wine opener & try again x3 (odds come from ODDS, not slice counts)
-    GIFT("Visa Gift Card", "VISA", "#b3202a", "#fff"), PEN, KOOZIE,
-    MYSTERY, WINE, PEN,
-    GIFT("Starbucks Gift Card", "STARBUCKS", "#b3202a", "#fff"), KOOZIE, RETRY,
-    GIFT("Chick-fil-A Gift Card", "CHICK-FIL-A", "#ffffff", "#1a1a1f"), PEN, KOOZIE,
-    MYSTERY, WINE, PEN,
+  const PRIZES = [   // 24 slices: gift card x5, try again x6, pens & koozies x4, mystery gift x3, wine opener x2 (odds come from ODDS, not slice counts)
+    GIFT("Visa Gift Card", "VISA", "#b3202a", "#fff"), PEN, RETRY,
+    MYSTERY, KOOZIE, WINE,
+    GIFT("Starbucks Gift Card", "STARBUCKS", "#b3202a", "#fff"), PEN, RETRY,
+    GIFT("Chick-fil-A Gift Card", "CHICK-FIL-A", "#ffffff", "#1a1a1f"), KOOZIE, MYSTERY,
+    RETRY, PEN, WINE,
     GIFT("Olive Garden Gift Card", "OLIVE GARDEN", "#ffffff", "#1a1a1f"), KOOZIE, RETRY,
-    GIFT("Panera Gift Card", "PANERA", "#b3202a", "#fff"), PEN, KOOZIE,
-    MYSTERY, WINE, RETRY,
+    GIFT("Panera Gift Card", "PANERA", "#b3202a", "#fff"), PEN, MYSTERY,
+    RETRY, KOOZIE, RETRY,
   ].map(p => Object.assign({}, p));
   PRIZES.forEach(p => { p.weight = ODDS[p.type] / PRIZES.filter(q => q.type === p.type).length; });
   // every gift card brand a mystery box can hold (the wheel's slices just say GIFT CARD); in-stock brands win when known
@@ -1477,9 +1477,8 @@
       let fs = Math.round(R * 0.078 * k);
       c.font = fs + "px Anton, Impact, sans-serif";
       while (c.measureText(p.top).width > R * 0.6 && fs > 20) { fs -= 2; c.font = fs + "px Anton, Impact, sans-serif"; }
-      c.fillText(p.top, x, -R * 0.022 * k);
-      c.font = Math.round(R * 0.042 * k) + "px Oswald, sans-serif";
-      c.fillText(p.sub, x, R * 0.058 * k);
+      c.fillText(p.top, x, p.sub ? -R * 0.022 * k : 0);
+      if (p.sub) { c.font = Math.round(R * 0.042 * k) + "px Oswald, sans-serif"; c.fillText(p.sub, x, R * 0.058 * k); }
       c.restore();
     });
     c.restore();
@@ -1817,7 +1816,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-02d";
+  const BUILD = "2026-11-02e";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
