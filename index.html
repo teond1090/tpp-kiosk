@@ -1376,6 +1376,9 @@
     [GIFT_WINS_KEY, HANDOUT_KEY, SESSION_KEY, GIFT_LIMIT_KEY, WINE_LIMIT_KEY, MYSTERY_LIMIT_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
     lsSet("tpp-reset", RESET_TAG);
   }
+  // one-time rig (user, 2026-11-04): the next spin on this device lands on a gift card (a real booth card), then normal odds
+  const FORCE_KEY = "tpp-force-gift", FORCE_TAG = "2026-11-04-1";
+  if (lsGet("tpp-force-tag", "") !== FORCE_TAG) { lsSet(FORCE_KEY, true); lsSet("tpp-force-tag", FORCE_TAG); }
   const giftsLeft = () => Math.max(0, lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) - lsGet(GIFT_WINS_KEY, 0));
   const todayKey = () => "tpp-wins-" + new Date().toISOString().slice(0, 10);
 
@@ -1609,7 +1612,9 @@
     wrapEl.style.translate = "";
     holdBtn.classList.remove("holding"); holdLbl.textContent = "Spinning...";
     const forced = lsGet(TEST_KEY, "");                                // staff test spin: land on a gift card once
-    const win = forced ? PRIZES.findIndex(p => p.kind === "gift") : pickPrize();
+    const rig = !forced && lsGet(FORCE_KEY, false) && giftChance() > 0; // one real gift card win, then back to the odds
+    if (lsGet(FORCE_KEY, false)) lsSet(FORCE_KEY, false);
+    const win = (forced || rig) ? PRIZES.findIndex(p => p.kind === "gift") : pickPrize();
     const TAU = Math.PI * 2, mod = x => ((x % TAU) + TAU) % TAU;
     const turns = 4 + Math.round(power * 5);                           // more power = more spins
     const jitter = (Math.random() - 0.5) * SEG * 0.7;                  // land inside the slice, not dead centre
@@ -1810,7 +1815,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-04a";
+  const BUILD = "2026-11-04b";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
