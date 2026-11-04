@@ -1369,6 +1369,13 @@
   const DEFAULT_GIFT_LIMIT = 25;
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  // one-time reset for the show (user, 2026-11-04): test spins on this device must not count against the show's limits.
+  // Clears gift wins, handouts, the session and the limit overrides (back to defaults); the kiosk key is kept.
+  const RESET_TAG = "2026-11-04";
+  if (lsGet("tpp-reset", "") !== RESET_TAG) {
+    [GIFT_WINS_KEY, HANDOUT_KEY, SESSION_KEY, GIFT_LIMIT_KEY, WINE_LIMIT_KEY, MYSTERY_LIMIT_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    lsSet("tpp-reset", RESET_TAG);
+  }
   const giftsLeft = () => Math.max(0, lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) - lsGet(GIFT_WINS_KEY, 0));
   const todayKey = () => "tpp-wins-" + new Date().toISOString().slice(0, 10);
 
@@ -1561,15 +1568,7 @@
     if (DELIVERY !== "handout") return (giftsLeft() <= 0 || stockTotal() <= 0) ? 0 : ODDS.gift;
     if (!BOOTH) return giftsLeft() <= 0 ? 0 : ODDS.gift;             // sheet unreachable: plain odds + this kiosk's limit
     if (BOOTH.left <= 0) return 0;
-    const ses = lsGet(SESSION_KEY, null), m = ses && /^(\d{1,2}):(\d{2})$/.exec(ses.start || "");
-    if (!m) return ODDS.gift;                                          // no session start set: flat 1 in 10
-    const start = new Date(); start.setHours(+m[1], +m[2], 0, 0);
-    const mins = +ses.mins || 180, elapsed = (Date.now() - start) / 60000;
-    if (elapsed < 0) return ODDS.gift;
-    if (elapsed >= mins) return 50;
-    const diff = BOOTH.total * elapsed / mins - BOOTH.won;             // cards behind (+) or ahead (-) of an even pace
-    const c = diff >= 0 ? ODDS.gift + 8 * diff : ODDS.gift / (1 - diff);
-    return Math.max(3, Math.min(50, Math.round(c * 10) / 10));
+    return ODDS.gift;                                                  // user, 2026-11-04: exactly 1 in 10, no pacing (session ignored)
   }
   function pickPrize() {
     // the gift slices share giftChance(); the other prize types keep their relative odds; the free re-spin can't land on
@@ -1811,7 +1810,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-02f";
+  const BUILD = "2026-11-04a";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
@@ -1913,12 +1912,12 @@
     document.getElementById("staff-key").value = lsGet(KEY_KEY, "");
     document.getElementById("staff-brands").value = boothBrands().map(b => b.replace(" Gift Card", "")).join(", ");
     document.getElementById("staff-brands-row").hidden = DELIVERY !== "handout" || !!BOOTH;
-    document.getElementById("staff-session-row").hidden = DELIVERY !== "handout";
+    document.getElementById("staff-session-row").hidden = true;      // pacing is off (user, 2026-11-04): flat 10%
     const ses = lsGet(SESSION_KEY, null) || {};
     document.getElementById("staff-start").value = ses.start || ""; document.getElementById("staff-mins").value = ses.mins || 180;
     if (DELIVERY === "handout" && BOOTH) document.getElementById("staff-stats").innerHTML +=
       "<br>Booth cards, day " + BOOTH.day + " (switch the day on the leads page): <b>" + BOOTH.left + " of " + BOOTH.total + " left</b>, " + BOOTH.won + " won" +
-      "<br>Gift card chance on the next spin: <b>" + giftChance() + "%</b>" + (ses.start ? " (session " + ses.start + ", " + (ses.mins || 180) + " min)" : " (no session start set: flat 1 in 10)") +
+      "<br>Gift card chance on the next spin: <b>" + giftChance() + "%</b> (flat 1 in 10 while today's cards last)" +
       "<br>Mystery boxes pick from: " + (BOOTH.available.map(c => "$" + c.amount + " " + String(c.brand).replace(/ gift card/i, "")).join(", ") || "none left today");
     else if (DELIVERY === "handout") document.getElementById("staff-stats").innerHTML += "<br>Mystery boxes pick from: " + boothBrands().map(b => b.replace(" Gift Card", "")).join(", ") + " (prize sheet not reachable)";
     else document.getElementById("staff-stats").innerHTML += "<br>E-gift cards in stock: " +
