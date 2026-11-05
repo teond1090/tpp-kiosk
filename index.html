@@ -1313,7 +1313,7 @@
   //   kind "handout" -> no email: show this screen at the booth (with a claim code)
   //   kind "retry"   -> one free re-spin per visitor (the re-spin can't land on Try Again)
   // Chance per prize TYPE (%); each type's chance is split evenly over its slices, so adding slices never changes the odds.
-  const ODDS = { gift: 10, pen: 29, koozie: 22, wine: 3, retry: 29, mystery: 7 };   // user 2026-11-02: pens ~29% (most stock); wine opener, gift card, mystery gift lowered; gift card is the paced base
+  const ODDS = { gift: 35, pen: 21.5, koozie: 16.3, wine: 0.5, retry: 21.5, mystery: 5.2 };   // user 2026-11-05: gift card 35%, wine opener under 1%; the rest keep their old proportions   // user 2026-11-02: pens ~29% (most stock); wine opener, gift card, mystery gift lowered; gift card is the paced base
   const WINE_LIMIT_KEY = "tpp-wine-limit", DEFAULT_WINE_LIMIT = 2;    // wine openers at the booth; 0 left -> the wheel can't land on them
   const wineLeft = () => Math.max(0, lsGet(WINE_LIMIT_KEY, DEFAULT_WINE_LIMIT) - lsGet("tpp-handouts", []).filter(h => /wine/i.test(h.prize)).length);
   const MYSTERY_LIMIT_KEY = "tpp-mystery-limit", DEFAULT_MYSTERY_LIMIT = 7;   // mystery gifts = stuffed animals (user, 2026-11-02); 0 left -> slices drop out
@@ -1377,8 +1377,9 @@
     lsSet("tpp-reset", RESET_TAG);
   }
   // one-time rig (user, 2026-11-04): the next spin on this device lands on a gift card (a real booth card), then normal odds
-  const FORCE_KEY = "tpp-force-gift", FORCE_TAG = "2026-11-04-1";
+  const FORCE_KEY = "tpp-force-gift", FORCE_TAG = "2026-11-05-1", FORCE_AMOUNT = 100;   // 2026-11-05: the next spin wins a $100 card
   if (lsGet("tpp-force-tag", "") !== FORCE_TAG) { lsSet(FORCE_KEY, true); lsSet("tpp-force-tag", FORCE_TAG); }
+  let rigAmount = 0;                                                   // set for the rigged spin: every box holds a card of this amount
   const giftsLeft = () => Math.max(0, lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) - lsGet(GIFT_WINS_KEY, 0));
   const todayKey = () => "tpp-wins-" + new Date().toISOString().slice(0, 10);
 
@@ -1614,6 +1615,7 @@
     const forced = lsGet(TEST_KEY, "");                                // staff test spin: land on a gift card once
     const rig = !forced && lsGet(FORCE_KEY, false) && giftChance() > 0; // one real gift card win, then back to the odds
     if (lsGet(FORCE_KEY, false)) lsSet(FORCE_KEY, false);
+    rigAmount = rig ? FORCE_AMOUNT : 0;
     const win = (forced || rig) ? PRIZES.findIndex(p => p.kind === "gift") : pickPrize();
     const TAU = Math.PI * 2, mod = x => ((x % TAU) + TAU) % TAU;
     const turns = 4 + Math.round(power * 5);                           // more power = more spins
@@ -1668,7 +1670,10 @@
     pool = pool.sort(() => Math.random() - 0.5);
     const key = c => c.n ? "#" + c.n : c.brand, seen = new Set();
     const distinct = pool.filter(c => !seen.has(key(c)) && seen.add(key(c)));
+    const rigged = rigAmount ? distinct.filter(c => c.amount === rigAmount) : [];   // rigged spin: only cards of that amount (if any are left today)
+    rigAmount = 0;
     const cards = testBrand ? [1, 2, 3].map(() => ({ brand: testBrand }))
+      : rigged.length ? [0, 1, 2].map(k => rigged[k % rigged.length])
       : distinct.length >= 3 ? distinct.slice(0, 3) : [0, 1, 2].map(k => distinct[k % distinct.length]);
     const name = c => (c.amount ? "$" + c.amount + " " : "") + c.brand.replace(" Gift Card", "");
     const wrap = document.getElementById("boxes"), claim = document.getElementById("pick-claim");
@@ -1815,7 +1820,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-04b";
+  const BUILD = "2026-11-05a";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
