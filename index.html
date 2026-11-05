@@ -1377,7 +1377,8 @@
     lsSet("tpp-reset", RESET_TAG);
   }
   // one-time rig (user, 2026-11-04): the next spin on this device lands on a gift card (a real booth card), then normal odds
-  const FORCE_KEY = "tpp-force-gift", FORCE_TAG = "2026-11-05-2", FORCE_AMOUNT = 100;   // 2026-11-05: the next spin wins a $100 card
+  const FORCE_KEY = "tpp-force-gift", FORCE_TAG = "2026-11-05-3", FORCE_AMOUNT = 50;   // 2026-11-05: the next spin wins a $50 card
+  const CARD_ORDER = [50, 25, 100, 200];                               // user, 2026-11-05: $50s go first, the $100s and the $200 last
   if (lsGet("tpp-force-tag", "") !== FORCE_TAG) { lsSet(FORCE_KEY, true); lsSet("tpp-force-tag", FORCE_TAG); }
   let rigAmount = 0;                                                   // set for the rigged spin: every box holds a card of this amount
   const giftsLeft = () => Math.max(0, lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) - lsGet(GIFT_WINS_KEY, 0));
@@ -1670,7 +1671,9 @@
     pool = pool.sort(() => Math.random() - 0.5);
     const key = c => c.n ? "#" + c.n : c.brand, seen = new Set();
     const distinct = pool.filter(c => !seen.has(key(c)) && seen.add(key(c)));
-    const rigged = rigAmount ? distinct.filter(c => c.amount === rigAmount) : [];   // rigged spin: only cards of that amount (if any are left today)
+    // rigged spin: only cards of that amount (if any are left today); otherwise the cheapest tier still available (CARD_ORDER)
+    const want = (rigAmount && distinct.some(c => c.amount === rigAmount)) ? rigAmount : (CARD_ORDER.find(a => distinct.some(c => c.amount === a)) || 0);
+    const rigged = want ? distinct.filter(c => c.amount === want) : [];
     rigAmount = 0;
     const cards = testBrand ? [1, 2, 3].map(() => ({ brand: testBrand }))
       : rigged.length ? [0, 1, 2].map(k => rigged[k % rigged.length])
@@ -1820,7 +1823,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-05b";
+  const BUILD = "2026-11-05c";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
