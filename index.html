@@ -1377,9 +1377,12 @@
     lsSet("tpp-reset", RESET_TAG);
   }
   // one-time rig (user, 2026-11-04): the next spin on this device lands on a gift card (a real booth card), then normal odds
-  const FORCE_KEY = "tpp-force-gift", FORCE_TAG = "2026-11-05-3", FORCE_AMOUNT = 50;   // 2026-11-05: the next spin wins a $50 card
+  const FORCE_KEY = "tpp-force-gift", FORCE_TAG = "2026-11-05-4", FORCE_AMOUNT = 50;   // 2026-11-05 (4): forced spin cancelled (armed = false)
   const CARD_ORDER = [50, 100, 200, 25];                               // user, 2026-11-05: all the $50s first (day 2's moved to day 1 on the sheet), the $25s last
-  if (lsGet("tpp-force-tag", "") !== FORCE_TAG) { lsSet(FORCE_KEY, true); lsSet("tpp-force-tag", FORCE_TAG); }
+  if (lsGet("tpp-force-tag", "") !== FORCE_TAG) { lsSet(FORCE_KEY, false); lsSet("tpp-force-tag", FORCE_TAG); }
+  // whoever wins the next gift card at the normal odds gets a card of this amount (user, 2026-11-05); one time per device
+  const NEXT_KEY = "tpp-next-gift-amount", NEXT_TAG = "2026-11-05-4", NEXT_AMOUNT = 100;
+  if (lsGet("tpp-next-tag", "") !== NEXT_TAG) { lsSet(NEXT_KEY, NEXT_AMOUNT); lsSet("tpp-next-tag", NEXT_TAG); }
   let rigAmount = 0;                                                   // set for the rigged spin: every box holds a card of this amount
   const giftsLeft = () => Math.max(0, lsGet(GIFT_LIMIT_KEY, DEFAULT_GIFT_LIMIT) - lsGet(GIFT_WINS_KEY, 0));
   const todayKey = () => "tpp-wins-" + new Date().toISOString().slice(0, 10);
@@ -1672,7 +1675,9 @@
     const key = c => c.n ? "#" + c.n : c.brand, seen = new Set();
     const distinct = pool.filter(c => !seen.has(key(c)) && seen.add(key(c)));
     // rigged spin: only cards of that amount (if any are left today); otherwise the cheapest tier still available (CARD_ORDER)
-    const want = (rigAmount && distinct.some(c => c.amount === rigAmount)) ? rigAmount : (CARD_ORDER.find(a => distinct.some(c => c.amount === a)) || 0);
+    const nextAmt = testBrand ? 0 : lsGet(NEXT_KEY, 0); if (nextAmt) lsSet(NEXT_KEY, 0);   // one-time "next winner gets $X"
+    const pref = rigAmount || nextAmt;
+    const want = (pref && distinct.some(c => c.amount === pref)) ? pref : (CARD_ORDER.find(a => distinct.some(c => c.amount === a)) || 0);
     const rigged = want ? distinct.filter(c => c.amount === want) : [];
     rigAmount = 0;
     const cards = testBrand ? [1, 2, 3].map(() => ({ brand: testBrand }))
@@ -1823,7 +1828,7 @@
   // ---------------- keep the kiosk current on the original link ----------------
   // A kiosk can sit on one page for days. version.json holds the current BUILD; when it changes, the page reloads itself
   // the next time nobody is using it (promo loop or a quiet home screen), so the original link always runs the latest code.
-  const BUILD = "2026-11-05f";
+  const BUILD = "2026-11-05g";
   async function checkVersion() {
     try {
       const v = (await (await fetch("version.json?t=" + Date.now(), { cache: "no-store" })).json()).build;
